@@ -1,5 +1,5 @@
 // src/hooks/useFaceDetection.js
-// Custom React hook for MediaPipe browser-based face presence, phone/distraction detection, and sleep posture.
+// Custom React hook for MediaPipe browser-based face presence, 5s light sleep, 30s deep sleep, and posture detection.
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { FaceDetector, FilesetResolver } from '@mediapipe/tasks-vision';
@@ -131,13 +131,13 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
               videoHeight: video.videoHeight
             });
 
-            let phoneOrDistracted = false;
+            let phoneOrLightSleep = false;
             const centerX = (bbox.originX + bbox.width / 2) / video.videoWidth;
             const centerY = (bbox.originY + bbox.height / 2) / video.videoHeight;
 
-            // Test 1: Looking down at phone in hands or leaning down
+            // Test 1: Slumped down on desk/keyboard or head tilted out of camera view
             if (centerY > 0.65 || centerY < 0.10 || centerX < 0.10 || centerX > 0.90) {
-              phoneOrDistracted = true;
+              phoneOrLightSleep = true;
             }
 
             // Test 2: Keypoints orientation (Right eye: 0, Left eye: 1, Nose: 2)
@@ -156,23 +156,23 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
 
                 // Turned away looking at phone/side
                 if (eyeDist > 0 && noseXOffset / eyeDist > 0.40) {
-                  phoneOrDistracted = true;
+                  phoneOrLightSleep = true;
                 }
 
-                // Head tilted down looking at phone screen (noseYDist decreases)
+                // Head tilted down / eyes closed / light sleep (noseYDist decreases)
                 if (eyeDist > 0 && (noseYDist / eyeDist < 0.28 || noseYDist < 0)) {
-                  phoneOrDistracted = true;
+                  phoneOrLightSleep = true;
                 }
               }
             }
 
-            if (phoneOrDistracted) {
+            if (phoneOrLightSleep) {
               if (!distractedStartTimeRef.current) {
                 distractedStartTimeRef.current = Date.now();
               }
               const distSec = Math.floor((Date.now() - distractedStartTimeRef.current) / 1000);
               setDistractedDuration(distSec);
-              if (distSec >= 3) {
+              if (distSec >= 5) {
                 setIsDistracted(true);
               }
             } else {

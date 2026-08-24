@@ -31,7 +31,7 @@ export default function App() {
   // Activity Event Log (Max 10)
   const [events, setEvents] = useState([]);
 
-  // Trigger state refs to prevent infinite React re-renders
+  // Trigger state refs to prevent infinite React re-renders & handle 5s vs 30s sleep tiers
   const hasTriggeredSleepWarningRef = useRef(false);
   const hasTriggeredFaceMissingRef = useRef(false);
   const hasTriggeredDistractedRef = useRef(false);
@@ -146,36 +146,36 @@ export default function App() {
     onTabReturn: handleTabReturn
   });
 
-  // Face missing / distraction / sleep monitoring state machine
+  // Face missing / distraction / 5s light sleep / 30s deep sleep monitoring state machine
   useEffect(() => {
     if (!isMonitoring) return;
 
     if (missingDuration >= 30 || distractedDuration >= 30) {
       if (!hasTriggeredSleepWarningRef.current) {
         hasTriggeredSleepWarningRef.current = true;
-        setSessionStatus('Face Not Detected');
+        setSessionStatus('Deep Sleep (30s+)');
         const msg = audioManager.getFunnyMessage('sleep-warning');
         setFunnyMessage(msg);
         audioManager.playAudio('sleep-warning', true);
-        addEvent('face-missing', 'Extended Sleep/Missing (30s+)', 'No face or eyes closed for 30+ seconds!');
+        addEvent('face-missing', 'Deep Sleep Warning (30s+)', 'Eyes closed or sleeping for 30+ seconds continuously!');
       }
-    } else if (missingDuration >= 5) {
-      if (!hasTriggeredFaceMissingRef.current) {
-        hasTriggeredFaceMissingRef.current = true;
-        setSessionStatus('Face Not Detected');
-        const msg = audioManager.getFunnyMessage('face-missing');
-        setFunnyMessage(msg);
-        audioManager.playAudio('face-missing', false);
-        addEvent('face-missing', 'Face Missing / Covered', 'Face covered by book or missing from camera!');
-      }
-    } else if (isDistracted) {
-      if (!hasTriggeredDistractedRef.current) {
-        hasTriggeredDistractedRef.current = true;
-        setSessionStatus('Distracted');
-        const msg = audioManager.getFunnyMessage('distracted');
-        setFunnyMessage(msg);
-        audioManager.playAudio('distracted', false);
-        addEvent('distracted', 'Distraction / Phone', 'Student looking away or at phone for 3+ seconds!');
+    } else if (missingDuration >= 5 || distractedDuration >= 5) {
+      if (!hasTriggeredFaceMissingRef.current && !hasTriggeredDistractedRef.current && !hasTriggeredSleepWarningRef.current) {
+        if (missingDuration >= 5) {
+          hasTriggeredFaceMissingRef.current = true;
+          setSessionStatus('Face Not Detected');
+          const msg = audioManager.getFunnyMessage('face-missing');
+          setFunnyMessage(msg);
+          audioManager.playAudio('face-missing', false);
+          addEvent('face-missing', 'Face Missing / Covered (5s)', 'Face covered by book or missing from camera!');
+        } else if (distractedDuration >= 5) {
+          hasTriggeredDistractedRef.current = true;
+          setSessionStatus('Light Sleep / Distracted (5s)');
+          const msg = audioManager.getFunnyMessage('distracted');
+          setFunnyMessage(msg);
+          audioManager.playAudio('distracted', false);
+          addEvent('distracted', 'Light Sleep / Distraction (5s)', 'Eyes closed or head slumped for 5 seconds!');
+        }
       }
     } else if (isFaceDetected && !isDistracted) {
       if (hasTriggeredFaceMissingRef.current || hasTriggeredDistractedRef.current || hasTriggeredSleepWarningRef.current) {
@@ -186,7 +186,7 @@ export default function App() {
         const msg = audioManager.getFunnyMessage('back-to-study');
         setFunnyMessage(msg);
         audioManager.playAudio('back-to-study', false);
-        addEvent('back-to-study', 'User Returned', 'Face detected and focus restored!');
+        addEvent('back-to-study', 'User Returned', 'Eyes open, focus restored!');
       }
     }
   }, [isMonitoring, missingDuration, distractedDuration, isDistracted, isFaceDetected, addEvent]);
@@ -200,7 +200,7 @@ export default function App() {
         setSessionStatus((currentStatus) => {
           if (currentStatus === 'Focused' || currentStatus === 'Monitoring') {
             setFocusedTime((f) => f + 1);
-          } else if (currentStatus === 'Distracted' || currentStatus === 'Face Not Detected' || currentStatus === 'Tab Changed') {
+          } else if (currentStatus === 'Distracted' || currentStatus === 'Face Not Detected' || currentStatus === 'Tab Changed' || currentStatus === 'Deep Sleep (30s+)' || currentStatus === 'Light Sleep / Distracted (5s)') {
             setDistractedTime((d) => d + 1);
           }
           return currentStatus;
