@@ -13,7 +13,7 @@ import { StatusPanel } from './components/StatusPanel';
 import { SessionTimer } from './components/SessionTimer';
 import { AlertHistory } from './components/AlertHistory';
 
-import { ShieldCheck, Sparkles, Heart } from 'lucide-react';
+import { ShieldCheck, Sparkles, Heart, Maximize2, Minimize2 } from 'lucide-react';
 import './App.css';
 
 export default function App() {
@@ -22,6 +22,7 @@ export default function App() {
   const [funnyMessage, setFunnyMessage] = useState('');
   const [volume, setVolumeState] = useState(0.8);
   const [isMuted, setIsMutedState] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Timers State
   const [totalTime, setTotalTime] = useState(0);
@@ -56,6 +57,17 @@ export default function App() {
     distractedDuration,
     faceBoundingBox
   } = useFaceDetection({ videoRef, isCameraReady, isMonitoring });
+
+  // Toggle Fullscreen Mode
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().then(() => setIsFullscreen(true)).catch(() => {});
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().then(() => setIsFullscreen(false)).catch(() => {});
+      }
+    }
+  };
 
   // Event Helper
   const addEvent = useCallback((type, title, message) => {
@@ -214,16 +226,26 @@ export default function App() {
 
   return (
     <div className="app-container">
-      {/* Header */}
+      {/* Header Bar */}
       <header className="app-header">
         <div className="logo-container">
-          <ShieldCheck className="logo-icon" size={36} />
+          <ShieldCheck className="logo-icon" size={32} />
           <div>
             <h1 className="app-title">FocusGuard AI</h1>
             <p className="app-subtitle">
-              Funny AI-Powered Study & Webcam Monitor <Sparkles size={14} inline="true" />
+              Funny AI Study & Webcam Monitor <Sparkles size={14} inline="true" />
             </p>
           </div>
+        </div>
+
+        <div className="header-right-actions">
+          <button
+            className="btn-icon"
+            onClick={toggleFullscreen}
+            title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
+          >
+            {isFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+          </button>
         </div>
       </header>
 
@@ -281,10 +303,10 @@ export default function App() {
 
       {/* Footer & Credits */}
       <footer className="app-footer">
-        <p>FocusGuard AI • 100% Local Browser Detection • Privacy First</p>
-        <p className="app-credits">
-          Developed by <strong>Rakesh</strong> and Collaborated with <strong>Ani (main developer)</strong> <Heart size={14} className="heart-icon" inline="true" />
-        </p>
+        <span>FocusGuard AI • 100% Local Browser Detection • Privacy First</span>
+        <span className="app-credits">
+          Developed by <strong>Rakesh</strong> and Collaborated with <strong>Ani (main developer)</strong> <Heart size={13} className="heart-icon" inline="true" />
+        </span>
       </footer>
     </div>
   );
