@@ -138,13 +138,21 @@ export default function App() {
   useEffect(() => {
     if (!isMonitoring) return;
 
-    if (missingDuration >= 5) {
+    if (missingDuration >= 30 || distractedDuration >= 30) {
+      if (funnyMessage !== 'Sleep Warning (30s+)') {
+        setSessionStatus('Face Not Detected');
+        const msg = audioManager.getFunnyMessage('sleep-warning');
+        setFunnyMessage(msg);
+        audioManager.playAudio('sleep-warning', true, msg);
+        addEvent('face-missing', 'Extended Sleep/Missing (30s+)', 'No face or eyes closed for 30+ seconds!');
+      }
+    } else if (missingDuration >= 5) {
       if (sessionStatus !== 'Face Not Detected') {
         setSessionStatus('Face Not Detected');
         const msg = audioManager.getFunnyMessage('face-missing');
         setFunnyMessage(msg);
         audioManager.playAudio('face-missing', false, msg);
-        addEvent('face-missing', 'Face Missing', 'No face detected in camera view for 5+ seconds!');
+        addEvent('face-missing', 'Face Missing / Covered', 'Face covered by book or missing from camera!');
       }
     } else if (isDistracted) {
       if (sessionStatus !== 'Distracted') {
@@ -163,7 +171,7 @@ export default function App() {
         addEvent('back-to-study', 'User Returned', 'Face detected and focus restored!');
       }
     }
-  }, [isMonitoring, missingDuration, isDistracted, isFaceDetected, sessionStatus, addEvent]);
+  }, [isMonitoring, missingDuration, distractedDuration, isDistracted, isFaceDetected, sessionStatus, funnyMessage, addEvent]);
 
   // Session Duration Timer Loop
   useEffect(() => {

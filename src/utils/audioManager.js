@@ -1,39 +1,39 @@
 // src/utils/audioManager.js
-// Manages built-in MP3 sound playback, Web Audio API synth fallback, Web Speech API voice speech, cooldowns, and funny messages.
+// Manages user-provided custom MPEG/MP3 audio playback, Web Audio API synth fallback, Web Speech API voice speech, and funny alert messages.
 
 const AUDIO_FILES = {
-  'start-study': '/audio/start-study.mp3',
-  'tab-change': '/audio/tab-change.mp3',
-  'face-missing': '/audio/face-missing.mp3',
-  'distracted': '/audio/distracted.mp3',
-  'back-to-study': '/audio/back-to-study.mp3',
+  'start-study': '/audio/start-study.mpeg',
+  'tab-change': '/audio/tab-change.mpeg',
+  'face-missing': '/audio/when my face fully  cover by book.mpeg',
+  'distracted': '/audio/distracted.mpeg',
+  'back-to-study': '/audio/back-to-study.mpeg',
+  'sleep-warning': '/audio/when i dont open my eyes more then 30 secont aftar first alart.mpeg',
 };
 
 const FUNNY_MESSAGES = {
   'start-study': [
     'Welcome back! এবার মন দিয়ে পড়ো।',
-    'Study session started! No distractions allowed!',
-    'চলো শুরু করা যাক! Keep eyes on the desk.'
+    'Study session started! No distractions allowed!'
   ],
   'tab-change': [
     'Tab change kore ki korcho?',
-    'Hey! YouTube naki Insta? Tab change bondho koro!',
-    'পড়াশোনা ছেড়ে ব্রাউজিং? Back to study right now!'
+    'Hey! YouTube naki Insta? Tab change bondho koro!'
   ],
   'face-missing': [
-    'Oi! Porte bose kothay gele?',
-    'Camera tomake খুঁজে পাচ্ছে না! Wake up!',
-    'Where did you vanish? Chair-e fire esho, ghumiyo na!'
+    'Oi! Porte bose kothay gele? Face cover/missing!',
+    'Camera tomake খুঁজে পাচ্ছে না! Wake up!'
   ],
   'distracted': [
     'Phone নামাও, পড়াশোনায় মন দাও!',
-    'Don’t look away or sleep! Screen-e mon dao!',
-    'Oi! Porte bose matha nichu kore ghumaccho? Wake up!'
+    'Don’t look away or sleep! Screen-e mon dao!'
   ],
   'back-to-study': [
     'Welcome back! এবার মন দিয়ে পড়ো।',
-    'Good student! Focus restored.',
-    'সাবাশ! আবার মন দিয়ে পড়তে শুরু করেছো।'
+    'Good student! Focus restored.'
+  ],
+  'sleep-warning': [
+    'Wake up! You have been sleeping / missing for more than 30 seconds!',
+    'Oi! 30 second hoye gelo, ekhono ghumaccho? Utho!'
   ]
 };
 
@@ -43,7 +43,7 @@ class AudioManager {
     this.volume = 0.8;
     this.muted = false;
     this.lastPlayTimes = {}; // Stores timestamps for cooldown check
-    this.cooldownMs = 8000; // Minimum 8 seconds between repetitive alerts
+    this.cooldownMs = 6000; // Minimum 6 seconds between repetitive alerts
     this.audioContext = null;
   }
 
@@ -100,7 +100,7 @@ class AudioManager {
     }
   }
 
-  // Web Speech API Voice Output (speaks the exact funny warning words out loud)
+  // Web Speech API Voice Output
   speakMessage(text) {
     if (this.muted || typeof window === 'undefined' || !('speechSynthesis' in window)) return;
     try {
@@ -168,7 +168,7 @@ class AudioManager {
         gain.connect(masterGain);
         osc.start(now);
         osc.stop(now + 0.5);
-      } else if (eventType === 'face-missing') {
+      } else if (eventType === 'face-missing' || eventType === 'sleep-warning') {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = 'sawtooth';
