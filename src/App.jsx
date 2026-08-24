@@ -13,7 +13,7 @@ import { StatusPanel } from './components/StatusPanel';
 import { SessionTimer } from './components/SessionTimer';
 import { AlertHistory } from './components/AlertHistory';
 
-import { ShieldCheck, Sparkles } from 'lucide-react';
+import { ShieldCheck, Sparkles, Heart } from 'lucide-react';
 import './App.css';
 
 export default function App() {
@@ -279,9 +279,12 @@ export default function App() {
         </section>
       </main>
 
-      {/* Footer */}
+      {/* Footer & Credits */}
       <footer className="app-footer">
         <p>FocusGuard AI • 100% Local Browser Detection • Privacy First</p>
+        <p className="app-credits">
+          Developed by <strong>Rakesh</strong> and Collaborated with <strong>Ani (main developer)</strong> <Heart size={14} className="heart-icon" inline="true" />
+        </p>
       </footer>
     </div>
   );
