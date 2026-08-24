@@ -9,7 +9,6 @@ import { audioManager } from './utils/audioManager';
 
 import {
   ShieldCheck,
-  Sparkles,
   Heart,
   Camera,
   CameraOff,
@@ -26,10 +25,6 @@ import {
   Clock,
   CheckCircle2,
   AlertOctagon,
-  AlertTriangle,
-  EyeOff,
-  Bell,
-  ShieldX
 } from 'lucide-react';
 import './App.css';
 
@@ -57,6 +52,14 @@ export default function App() {
   const hasTriggeredSleepWarningRef = useRef(false);
   const hasTriggeredFaceMissingRef = useRef(false);
   const hasTriggeredDistractedRef = useRef(false);
+  const funnyMessageTimerRef = useRef(null);
+
+  // Auto-clear funny message after 6 seconds
+  const setFunnyMessageWithTimeout = useCallback((msg) => {
+    setFunnyMessageWithTimeout(msg);
+    if (funnyMessageTimerRef.current) clearTimeout(funnyMessageTimerRef.current);
+    funnyMessageTimerRef.current = setTimeout(() => setFunnyMessage(''), 6000);
+  }, []);
 
   // Camera Hook
   const {
@@ -125,7 +128,7 @@ export default function App() {
     hasTriggeredDistractedRef.current = false;
 
     const msg = audioManager.getFunnyMessage('start-study');
-    setFunnyMessage(msg);
+    setFunnyMessageWithTimeout(msg);
     audioManager.playAudio('start-study', true);
     addEvent('start-study', 'Session Started', 'Study session monitoring initiated.');
   };
@@ -159,7 +162,7 @@ export default function App() {
     if (!isMonitoring) return;
     setSessionStatus('Tab Changed');
     const msg = audioManager.getFunnyMessage('tab-change');
-    setFunnyMessage(msg);
+    setFunnyMessageWithTimeout(msg);
     audioManager.playAudio('tab-change', false);
     addEvent('tab-change', 'Tab Changed', 'Switched browser tab or minimized window!');
   }, [isMonitoring, addEvent]);
@@ -168,7 +171,7 @@ export default function App() {
     if (!isMonitoring) return;
     setSessionStatus('Focused');
     const msg = audioManager.getFunnyMessage('back-to-study');
-    setFunnyMessage(msg);
+    setFunnyMessageWithTimeout(msg);
     audioManager.playAudio('back-to-study', false);
     addEvent('back-to-study', 'User Returned', 'Returned to study browser tab.');
   }, [isMonitoring, addEvent]);
@@ -188,7 +191,7 @@ export default function App() {
         hasTriggeredSleepWarningRef.current = true;
         setSessionStatus('Deep Sleep (30s+)');
         const msg = audioManager.getFunnyMessage('sleep-warning');
-        setFunnyMessage(msg);
+        setFunnyMessageWithTimeout(msg);
         audioManager.playAudio('sleep-warning', true);
         addEvent('face-missing', 'Deep Sleep Warning (30s+)', 'Eyes closed or sleeping for 30+ seconds continuously!');
       }
@@ -198,14 +201,14 @@ export default function App() {
           hasTriggeredFaceMissingRef.current = true;
           setSessionStatus('Face Not Detected');
           const msg = audioManager.getFunnyMessage('face-missing');
-          setFunnyMessage(msg);
+          setFunnyMessageWithTimeout(msg);
           audioManager.playAudio('face-missing', false);
           addEvent('face-missing', 'Face Missing / Covered (5s)', 'Face covered by book or missing from camera!');
         } else if (distractedDuration >= 5) {
           hasTriggeredDistractedRef.current = true;
           setSessionStatus('Light Sleep / Distracted (5s)');
           const msg = audioManager.getFunnyMessage('distracted');
-          setFunnyMessage(msg);
+          setFunnyMessageWithTimeout(msg);
           audioManager.playAudio('distracted', false);
           addEvent('distracted', 'Light Sleep / Distraction (5s)', 'Eyes closed or head slumped for 5 seconds!');
         }
@@ -217,7 +220,7 @@ export default function App() {
         hasTriggeredDistractedRef.current = false;
         setSessionStatus('Focused');
         const msg = audioManager.getFunnyMessage('back-to-study');
-        setFunnyMessage(msg);
+        setFunnyMessageWithTimeout(msg);
         audioManager.playAudio('back-to-study', false);
         addEvent('back-to-study', 'User Returned', 'Eyes open, focus restored!');
       }
