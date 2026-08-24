@@ -18,6 +18,7 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
   const distractedStartTimeRef = useRef(null);
   const animFrameIdRef = useRef(null);
   const lastDetectTimeRef = useRef(0);
+  const lastTimestampMsRef = useRef(0);
 
   // Debounce counters to prevent single-frame flickering
   const consecutivePresentRef = useRef(0);
@@ -43,7 +44,7 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
             delegate: 'GPU'
           },
           runningMode: 'VIDEO',
-          minDetectionConfidence: 0.45
+          minDetectionConfidence: 0.4
         });
 
         if (!isSubscribed) {
@@ -82,18 +83,23 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
     }
 
     const video = videoRef.current;
-    if (video.readyState < 2 || video.paused || video.ended) {
+    if (video.readyState < 2 || video.videoWidth === 0 || video.videoHeight === 0 || video.paused || video.ended) {
       animFrameIdRef.current = requestAnimationFrame(detectFrame);
       return;
     }
 
     const now = performance.now();
-    // Run detection loop at ~200ms interval (5 FPS)
+    // Run detection loop at ~200ms interval (5 FPS) for CPU efficiency
     if (now - lastDetectTimeRef.current >= 200) {
       lastDetectTimeRef.current = now;
 
+      // Ensure timestamp is strictly monotonic integer to satisfy MediaPipe requirements
+      const nowMs = Math.round(now);
+      const timestampMs = Math.max(nowMs, lastTimestampMsRef.current + 1);
+      lastTimestampMsRef.current = timestampMs;
+
       try {
-        const result = detectorRef.current.detectForVideo(video, now);
+        const result = detectorRef.current.detectForVideo(video, timestampMs);
         const detections = result.detections || [];
         const rawHasFace = detections.length > 0;
 
@@ -105,7 +111,7 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
           consecutivePresentRef.current = 0;
         }
 
-        // Require at least 2 consecutive frames to confirm face state change
+        // Require at least 2 consecutive frames to confirm face presence/absence
         const confirmedHasFace = consecutivePresentRef.current >= 2;
         const confirmedMissing = consecutiveMissingRef.current >= 2;
 
@@ -214,6 +220,7 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
       consecutiveMissingRef.current = 0;
       missingStartTimeRef.current = null;
       distractedStartTimeRef.current = null;
+      lastTimestampMsRef.current = 0;
       setMissingDuration(0);
       setDistractedDuration(0);
       setIsFaceDetected(true);

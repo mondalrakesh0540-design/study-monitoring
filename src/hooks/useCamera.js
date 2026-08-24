@@ -51,12 +51,6 @@ export function useCamera() {
       });
 
       setStream(mediaStream);
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-        videoRef.current.onloadedmetadata = () => {
-          videoRef.current.play().catch(() => {});
-        };
-      }
       setCameraStatus(CAMERA_STATUS.READY);
     } catch (error) {
       console.error('Camera Access Error:', error);
@@ -75,6 +69,16 @@ export function useCamera() {
       }
     }
   }, []);
+
+  // Ensure stream is bound to video element whenever stream or videoRef updates
+  useEffect(() => {
+    if (videoRef.current && stream) {
+      videoRef.current.srcObject = stream;
+      videoRef.current.onloadedmetadata = () => {
+        videoRef.current.play().catch((e) => console.warn('Video play error:', e));
+      };
+    }
+  }, [stream]);
 
   // Cleanup tracks when component unmounts
   useEffect(() => {
