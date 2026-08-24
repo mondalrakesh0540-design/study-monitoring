@@ -84,7 +84,7 @@ export default function App() {
 
     const msg = audioManager.getFunnyMessage('start-study');
     setFunnyMessage(msg);
-    audioManager.playAudio('start-study', true);
+    audioManager.playAudio('start-study', true, msg);
     addEvent('start-study', 'Session Started', 'Study session monitoring initiated.');
   };
 
@@ -93,6 +93,7 @@ export default function App() {
     setIsMonitoring(false);
     setSessionStatus('Paused');
     setFunnyMessage('Study session paused.');
+    audioManager.stopCurrent();
     addEvent('stop-study', 'Session Stopped', 'Monitoring paused by user.');
   };
 
@@ -105,6 +106,7 @@ export default function App() {
     setDistractedTime(0);
     setEvents([]);
     setFunnyMessage('');
+    audioManager.stopCurrent();
   };
 
   // Handle Tab Switch
@@ -113,7 +115,7 @@ export default function App() {
     setSessionStatus('Tab Changed');
     const msg = audioManager.getFunnyMessage('tab-change');
     setFunnyMessage(msg);
-    audioManager.playAudio('tab-change');
+    audioManager.playAudio('tab-change', false, msg);
     addEvent('tab-change', 'Tab Changed', 'Switched browser tab or minimized window!');
   }, [isMonitoring, addEvent]);
 
@@ -122,7 +124,7 @@ export default function App() {
     setSessionStatus('Focused');
     const msg = audioManager.getFunnyMessage('back-to-study');
     setFunnyMessage(msg);
-    audioManager.playAudio('back-to-study');
+    audioManager.playAudio('back-to-study', false, msg);
     addEvent('back-to-study', 'User Returned', 'Returned to study browser tab.');
   }, [isMonitoring, addEvent]);
 
@@ -132,7 +134,7 @@ export default function App() {
     onTabReturn: handleTabReturn
   });
 
-  // Face missing / distraction monitoring state machine
+  // Face missing / distraction / sleep monitoring state machine
   useEffect(() => {
     if (!isMonitoring) return;
 
@@ -141,7 +143,7 @@ export default function App() {
         setSessionStatus('Face Not Detected');
         const msg = audioManager.getFunnyMessage('face-missing');
         setFunnyMessage(msg);
-        audioManager.playAudio('face-missing');
+        audioManager.playAudio('face-missing', false, msg);
         addEvent('face-missing', 'Face Missing', 'No face detected in camera view for 5+ seconds!');
       }
     } else if (isDistracted) {
@@ -149,15 +151,15 @@ export default function App() {
         setSessionStatus('Distracted');
         const msg = audioManager.getFunnyMessage('distracted');
         setFunnyMessage(msg);
-        audioManager.playAudio('distracted');
-        addEvent('distracted', 'Distraction Detected', 'Student looking away from screen for 5+ seconds!');
+        audioManager.playAudio('distracted', false, msg);
+        addEvent('distracted', 'Distraction / Sleeping', 'Student looking away or sleeping for 4+ seconds!');
       }
     } else if (isFaceDetected && !isDistracted) {
       if (sessionStatus === 'Face Not Detected' || sessionStatus === 'Distracted') {
         setSessionStatus('Focused');
         const msg = audioManager.getFunnyMessage('back-to-study');
         setFunnyMessage(msg);
-        audioManager.playAudio('back-to-study');
+        audioManager.playAudio('back-to-study', false, msg);
         addEvent('back-to-study', 'User Returned', 'Face detected and focus restored!');
       }
     }

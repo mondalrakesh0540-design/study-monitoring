@@ -1,5 +1,5 @@
 // src/utils/audioManager.js
-// Manages sound playback, Web Audio API synth fallback, cooldowns, and funny messages.
+// Manages MP3 sound playback, Web Audio API synth fallback, Web Speech API voice speech, cooldowns, and funny messages.
 
 const AUDIO_FILES = {
   'start-study': '/audio/start-study.mp3',
@@ -21,12 +21,12 @@ const FUNNY_MESSAGES = {
     'পড়াশোনা ছেড়ে ব্রাউজিং? Back to study right now!'
   ],
   'face-missing': [
-    'Oi! Porte bose ghumaccho naki kothay gele?',
+    'Oi! Porte bose kothay gele?',
     'Camera tomake খুঁজে পাচ্ছে না! Wake up!',
     'Where did you vanish? Chair-e fire esho, ghumiyo na!'
   ],
   'distracted': [
-    'Phone নামাও, পড়াশোনায় মন দাও! Ghumiyo na!',
+    'Phone নামাও, পড়াশোনায় মন দাও!',
     'Don’t look away or sleep! Screen-e mon dao!',
     'Oi! Porte bose matha nichu kore ghumaccho? Wake up!'
   ],
@@ -63,6 +63,9 @@ class AudioManager {
     if (this.currentAudio) {
       this.currentAudio.volume = this.muted ? 0 : this.volume;
     }
+    if (isMuted && typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
   }
 
   isMuted() {
@@ -87,14 +90,39 @@ class AudioManager {
       try {
         this.currentAudio.pause();
         this.currentAudio.currentTime = 0;
-      } catch (e) {
-        // Ignore audio stop error
-      }
+      } catch (e) {}
       this.currentAudio = null;
+    }
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      try {
+        window.speechSynthesis.cancel();
+      } catch (e) {}
     }
   }
 
-  // Fallback Web Audio API synthesizer for funny custom tones if MP3 is missing
+  // Web Speech API Voice Output (speaks the exact funny warning words out loud)
+  speakMessage(text) {
+    if (this.muted || typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    try {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.volume = this.volume;
+      utterance.rate = 1.0;
+      utterance.pitch = 1.1;
+
+      const voices = window.speechSynthesis.getVoices();
+      const preferredVoice = voices.find(v => v.lang.includes('bn') || v.lang.includes('IN') || v.lang.includes('en'));
+      if (preferredVoice) {
+        utterance.voice = preferredVoice;
+      }
+
+      window.speechSynthesis.speak(utterance);
+    } catch (err) {
+      console.warn('Speech Synthesis Error:', err);
+    }
+  }
+
+  // Fallback Web Audio API synthesizer for funny custom tones
   playSynthFallback(eventType) {
     if (this.muted) return;
     try {
@@ -115,7 +143,6 @@ class AudioManager {
       const now = ctx.currentTime;
 
       if (eventType === 'start-study' || eventType === 'back-to-study') {
-        // Happy chime
         [261.63, 329.63, 392.00, 523.25].forEach((freq, idx) => {
           const osc = ctx.createOscillator();
           const gain = ctx.createGain();
@@ -129,7 +156,6 @@ class AudioManager {
           osc.stop(now + idx * 0.1 + 0.3);
         });
       } else if (eventType === 'tab-change') {
-        // Funny boop wobble
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = 'triangle';
@@ -143,7 +169,6 @@ class AudioManager {
         osc.start(now);
         osc.stop(now + 0.5);
       } else if (eventType === 'face-missing') {
-        // Funny siren warning
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = 'sawtooth';
@@ -158,7 +183,6 @@ class AudioManager {
         osc.start(now);
         osc.stop(now + 0.6);
       } else if (eventType === 'distracted') {
-        // Funny low buzzy alert
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = 'square';
@@ -177,13 +201,18 @@ class AudioManager {
     }
   }
 
-  async playAudio(eventType, force = false) {
+  async playAudio(eventType, force = false, spokenMessage = '') {
     if (!this.canPlay(eventType, force)) {
       return { played: false, reason: 'cooldown' };
     }
 
     this.stopCurrent();
     this.lastPlayTimes[eventType] = Date.now();
+
+    // Speak out loud using Web Speech API if message provided
+    if (spokenMessage) {
+      this.speakMessage(spokenMessage);
+    }
 
     const audioPath = AUDIO_FILES[eventType];
     if (!audioPath) {
