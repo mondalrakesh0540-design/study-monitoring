@@ -12,7 +12,6 @@ import { StudyControls } from './components/StudyControls';
 import { StatusPanel } from './components/StatusPanel';
 import { SessionTimer } from './components/SessionTimer';
 import { AlertHistory } from './components/AlertHistory';
-import { AudioSettingsCard } from './components/AudioSettingsCard';
 
 import { ShieldCheck, Sparkles } from 'lucide-react';
 import './App.css';
@@ -204,7 +203,7 @@ export default function App() {
 
       {/* Main Grid Layout */}
       <main className="dashboard-grid">
-        {/* Left Column: Camera Preview, Study Controls, Custom Audio Upload */}
+        {/* Left Column: Camera Preview & Study Controls */}
         <section className="dashboard-col left-col">
           <CameraMonitor
             videoRef={videoRef}
@@ -223,8 +222,6 @@ export default function App() {
             stopStudy={stopStudy}
             resetSession={resetSession}
           />
-
-          <AudioSettingsCard />
         </section>
 
         {/* Right Column: Status Banner, Timers, History */}

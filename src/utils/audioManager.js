@@ -1,5 +1,5 @@
 // src/utils/audioManager.js
-// Manages MP3 sound playback, custom user uploaded tracks, Web Audio API synth fallback, Web Speech API voice speech, cooldowns, and funny messages.
+// Manages built-in MP3 sound playback, Web Audio API synth fallback, Web Speech API voice speech, cooldowns, and funny messages.
 
 const AUDIO_FILES = {
   'start-study': '/audio/start-study.mp3',
@@ -45,31 +45,6 @@ class AudioManager {
     this.lastPlayTimes = {}; // Stores timestamps for cooldown check
     this.cooldownMs = 8000; // Minimum 8 seconds between repetitive alerts
     this.audioContext = null;
-    this.customAudioTracks = {}; // Stores custom user uploaded MP3 tracks: { eventType: { url, name } }
-  }
-
-  setCustomAudioTrack(eventType, file) {
-    if (!file) return;
-    if (this.customAudioTracks[eventType]) {
-      try {
-        URL.revokeObjectURL(this.customAudioTracks[eventType].url);
-      } catch (e) {}
-    }
-    const url = URL.createObjectURL(file);
-    this.customAudioTracks[eventType] = { url, name: file.name };
-  }
-
-  removeCustomAudioTrack(eventType) {
-    if (this.customAudioTracks[eventType]) {
-      try {
-        URL.revokeObjectURL(this.customAudioTracks[eventType].url);
-      } catch (e) {}
-      delete this.customAudioTracks[eventType];
-    }
-  }
-
-  getCustomAudioTrackName(eventType) {
-    return this.customAudioTracks[eventType]?.name || null;
   }
 
   setVolume(vol) {
@@ -125,7 +100,7 @@ class AudioManager {
     }
   }
 
-  // Web Speech API Voice Output
+  // Web Speech API Voice Output (speaks the exact funny warning words out loud)
   speakMessage(text) {
     if (this.muted || typeof window === 'undefined' || !('speechSynthesis' in window)) return;
     try {
@@ -238,10 +213,7 @@ class AudioManager {
       this.speakMessage(spokenMessage);
     }
 
-    // Check if user uploaded a custom MP3 audio track for this event
-    const customTrack = this.customAudioTracks[eventType];
-    const audioPath = customTrack ? customTrack.url : AUDIO_FILES[eventType];
-
+    const audioPath = AUDIO_FILES[eventType];
     if (!audioPath) {
       this.playSynthFallback(eventType);
       return { played: true, method: 'synth' };
