@@ -93,7 +93,7 @@ export default function App() {
 
     const msg = audioManager.getFunnyMessage('start-study');
     setFunnyMessage(msg);
-    audioManager.playAudio('start-study', true, msg);
+    audioManager.playAudio('start-study', true);
     addEvent('start-study', 'Session Started', 'Study session monitoring initiated.');
   };
 
@@ -127,7 +127,7 @@ export default function App() {
     setSessionStatus('Tab Changed');
     const msg = audioManager.getFunnyMessage('tab-change');
     setFunnyMessage(msg);
-    audioManager.playAudio('tab-change', false, msg);
+    audioManager.playAudio('tab-change', false);
     addEvent('tab-change', 'Tab Changed', 'Switched browser tab or minimized window!');
   }, [isMonitoring, addEvent]);
 
@@ -136,7 +136,7 @@ export default function App() {
     setSessionStatus('Focused');
     const msg = audioManager.getFunnyMessage('back-to-study');
     setFunnyMessage(msg);
-    audioManager.playAudio('back-to-study', false, msg);
+    audioManager.playAudio('back-to-study', false);
     addEvent('back-to-study', 'User Returned', 'Returned to study browser tab.');
   }, [isMonitoring, addEvent]);
 
@@ -156,7 +156,7 @@ export default function App() {
         setSessionStatus('Face Not Detected');
         const msg = audioManager.getFunnyMessage('sleep-warning');
         setFunnyMessage(msg);
-        audioManager.playAudio('sleep-warning', true, msg);
+        audioManager.playAudio('sleep-warning', true);
         addEvent('face-missing', 'Extended Sleep/Missing (30s+)', 'No face or eyes closed for 30+ seconds!');
       }
     } else if (missingDuration >= 5) {
@@ -165,7 +165,7 @@ export default function App() {
         setSessionStatus('Face Not Detected');
         const msg = audioManager.getFunnyMessage('face-missing');
         setFunnyMessage(msg);
-        audioManager.playAudio('face-missing', false, msg);
+        audioManager.playAudio('face-missing', false);
         addEvent('face-missing', 'Face Missing / Covered', 'Face covered by book or missing from camera!');
       }
     } else if (isDistracted) {
@@ -174,7 +174,7 @@ export default function App() {
         setSessionStatus('Distracted');
         const msg = audioManager.getFunnyMessage('distracted');
         setFunnyMessage(msg);
-        audioManager.playAudio('distracted', false, msg);
+        audioManager.playAudio('distracted', false);
         addEvent('distracted', 'Distraction / Phone', 'Student looking away or at phone for 3+ seconds!');
       }
     } else if (isFaceDetected && !isDistracted) {
@@ -185,7 +185,7 @@ export default function App() {
         setSessionStatus('Focused');
         const msg = audioManager.getFunnyMessage('back-to-study');
         setFunnyMessage(msg);
-        audioManager.playAudio('back-to-study', false, msg);
+        audioManager.playAudio('back-to-study', false);
         addEvent('back-to-study', 'User Returned', 'Face detected and focus restored!');
       }
     }
