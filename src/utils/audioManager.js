@@ -21,14 +21,14 @@ const FUNNY_MESSAGES = {
     'পড়াশোনা ছেড়ে ব্রাউজিং? Back to study right now!'
   ],
   'face-missing': [
-    'Oi! Porte bose kothay gele?',
-    'Camera tomake খুঁজে পাচ্ছে না!',
-    'Where did you vanish? Chair-e fire esho!'
+    'Oi! Porte bose ghumaccho naki kothay gele?',
+    'Camera tomake খুঁজে পাচ্ছে না! Wake up!',
+    'Where did you vanish? Chair-e fire esho, ghumiyo na!'
   ],
   'distracted': [
-    'Phone নামাও, পড়াশোনায় মন দাও!',
-    'Don’t look away! Screen-e mon dao!',
-    'অন্য দিকে তাকিয়ে লাভ নেই, পড়া শেষ করো!'
+    'Phone নামাও, পড়াশোনায় মন দাও! Ghumiyo na!',
+    'Don’t look away or sleep! Screen-e mon dao!',
+    'Oi! Porte bose matha nichu kore ghumaccho? Wake up!'
   ],
   'back-to-study': [
     'Welcome back! এবার মন দিয়ে পড়ো।',
@@ -199,7 +199,6 @@ class AudioManager {
       const playPromise = audio.play();
       if (playPromise !== undefined) {
         await playPromise.catch(async () => {
-          // If MP3 file missing or autoplay blocked, fallback to synthesized sound
           this.playSynthFallback(eventType);
         });
       }

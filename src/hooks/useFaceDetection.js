@@ -1,5 +1,5 @@
 // src/hooks/useFaceDetection.js
-// Custom React hook for MediaPipe browser-based face presence and posture/distraction detection.
+// Custom React hook for MediaPipe browser-based face presence, sleep/head-slump posture, and distraction detection.
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { FaceDetector, FilesetResolver } from '@mediapipe/tasks-vision';
@@ -18,6 +18,10 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
   const distractedStartTimeRef = useRef(null);
   const animFrameIdRef = useRef(null);
   const lastDetectTimeRef = useRef(0);
+
+  // Debounce counters to prevent single-frame flickering
+  const consecutivePresentRef = useRef(0);
+  const consecutiveMissingRef = useRef(0);
 
   // Initialize MediaPipe FaceDetector
   useEffect(() => {
@@ -39,7 +43,7 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
             delegate: 'GPU'
           },
           runningMode: 'VIDEO',
-          minDetectionConfidence: 0.5
+          minDetectionConfidence: 0.45
         });
 
         if (!isSubscribed) {
@@ -84,23 +88,35 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
     }
 
     const now = performance.now();
-    // Throttle detection interval to ~200ms for high responsiveness & low CPU
+    // Run detection loop at ~200ms interval (5 FPS)
     if (now - lastDetectTimeRef.current >= 200) {
       lastDetectTimeRef.current = now;
 
       try {
         const result = detectorRef.current.detectForVideo(video, now);
         const detections = result.detections || [];
-        const hasFace = detections.length > 0;
+        const rawHasFace = detections.length > 0;
 
-        if (hasFace) {
+        if (rawHasFace) {
+          consecutivePresentRef.current += 1;
+          consecutiveMissingRef.current = 0;
+        } else {
+          consecutiveMissingRef.current += 1;
+          consecutivePresentRef.current = 0;
+        }
+
+        // Require at least 2 consecutive frames to confirm face state change
+        const confirmedHasFace = consecutivePresentRef.current >= 2;
+        const confirmedMissing = consecutiveMissingRef.current >= 2;
+
+        if (confirmedHasFace) {
           setIsFaceDetected(true);
           missingStartTimeRef.current = null;
           setMissingDuration(0);
 
           const firstFace = detections[0];
           const bbox = firstFace.boundingBox;
-          
+
           if (bbox && video.videoWidth > 0 && video.videoHeight > 0) {
             setFaceBoundingBox({
               originX: bbox.originX,
@@ -111,16 +127,16 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
               videoHeight: video.videoHeight
             });
 
-            let distracted = false;
+            let distractedOrSleeping = false;
             const centerX = (bbox.originX + bbox.width / 2) / video.videoWidth;
             const centerY = (bbox.originY + bbox.height / 2) / video.videoHeight;
 
-            // Distraction test 1: Face shifted out of main frame
-            if (centerX < 0.08 || centerX > 0.92 || centerY < 0.05 || centerY > 0.95) {
-              distracted = true;
+            // Test 1: Slumped down on desk/keyboard or head tilted out of camera view
+            if (centerY > 0.68 || centerY < 0.10 || centerX < 0.10 || centerX > 0.90) {
+              distractedOrSleeping = true;
             }
 
-            // Distraction test 2: Keypoints orientation (Right eye: 0, Left eye: 1, Nose: 2)
+            // Test 2: Keypoints orientation (Right eye: 0, Left eye: 1, Nose: 2)
             if (firstFace.keypoints && firstFace.keypoints.length >= 3) {
               const rightEye = firstFace.keypoints[0];
               const leftEye = firstFace.keypoints[1];
@@ -128,23 +144,31 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
 
               if (rightEye && leftEye && nose) {
                 const eyeDist = Math.abs(leftEye.x - rightEye.x);
-                const eyeCenter = (rightEye.x + leftEye.x) / 2;
-                const noseOffset = Math.abs(nose.x - eyeCenter);
+                const eyeY = (rightEye.y + leftEye.y) / 2;
+                const eyeX = (rightEye.x + leftEye.x) / 2;
 
-                // Significant turn away threshold
-                if (eyeDist > 0 && noseOffset / eyeDist > 0.48) {
-                  distracted = true;
+                const noseXOffset = Math.abs(nose.x - eyeX);
+                const noseYDist = nose.y - eyeY;
+
+                // Horizontal turn away
+                if (eyeDist > 0 && noseXOffset / eyeDist > 0.45) {
+                  distractedOrSleeping = true;
+                }
+
+                // Head bowed down / sleeping (nose moves up towards eye level relative to face height)
+                if (eyeDist > 0 && (noseYDist / eyeDist < 0.22 || noseYDist < 0)) {
+                  distractedOrSleeping = true;
                 }
               }
             }
 
-            if (distracted) {
+            if (distractedOrSleeping) {
               if (!distractedStartTimeRef.current) {
                 distractedStartTimeRef.current = Date.now();
               }
               const distSec = Math.floor((Date.now() - distractedStartTimeRef.current) / 1000);
               setDistractedDuration(distSec);
-              if (distSec >= 5) {
+              if (distSec >= 4) {
                 setIsDistracted(true);
               }
             } else {
@@ -153,8 +177,8 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
               setIsDistracted(false);
             }
           }
-        } else {
-          // No face visible
+        } else if (confirmedMissing) {
+          // No face detected (person left camera or dropped head completely onto desk)
           setFaceBoundingBox(null);
           setIsFaceDetected(false);
           setIsDistracted(false);
@@ -186,6 +210,8 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
         cancelAnimationFrame(animFrameIdRef.current);
         animFrameIdRef.current = null;
       }
+      consecutivePresentRef.current = 0;
+      consecutiveMissingRef.current = 0;
       missingStartTimeRef.current = null;
       distractedStartTimeRef.current = null;
       setMissingDuration(0);
