@@ -1,5 +1,6 @@
 // src/utils/audioManager.js
 // Plays user-provided custom MP3/MPEG audio files with multi-format browser fallback.
+// Includes AudioContext unlock for browser autoplay policy.
 
 const AUDIO_FILES = {
   'start-study': ['/audio/start-study.mp3', '/audio/start-study.mpeg'],
@@ -12,7 +13,7 @@ const AUDIO_FILES = {
 
 const FUNNY_MESSAGES = {
   'start-study': [
-    'Welcome back! এবার মন দিয়ে পড়ো।',
+    'Welcome back! এবার মন দিয়ে পড়ো।',
     'Study session started! No distractions allowed!'
   ],
   'tab-change': [
@@ -21,18 +22,18 @@ const FUNNY_MESSAGES = {
   ],
   'face-missing': [
     'Oi! Porte bose kothay gele? Face cover/missing!',
-    'Camera tomake খুঁজে পাচ্ছে না! Wake up!'
+    'Camera tomake khuje pachche na! Wake up!'
   ],
   'distracted': [
-    'Phone নামাও, পড়াশোনায় মন দাও!',
-    'Don’t look away or sleep! Screen-e mon dao!'
+    'Phone namao, porashonar mon dao!',
+    'Do not look away or sleep! Screen-e mon dao!'
   ],
   'back-to-study': [
-    'Welcome back! এবার মন দিয়ে পড়ো।',
+    'Welcome back! Ekhon mon diye poro.',
     'Good student! Focus restored.'
   ],
   'sleep-warning': [
-    'Wake up! You have been sleeping / missing for more than 30 seconds!',
+    'Wake up! You have been sleeping for more than 30 seconds!',
     'Oi! 30 second hoye gelo, ekhono ghumaccho? Utho!'
   ]
 };
@@ -44,6 +45,25 @@ class AudioManager {
     this.muted = false;
     this.lastPlayTimes = {};
     this.cooldownMs = 4000;
+    this.audioContextUnlocked = false;
+    this.audioContext = null;
+  }
+
+  // Called on user gesture (Start Camera / Start Study click)
+  // Unlocks browser audio autoplay policy
+  async unlockAudioContext() {
+    try {
+      if (!this.audioContext) {
+        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (this.audioContext.state === 'suspended') {
+        await this.audioContext.resume();
+      }
+      this.audioContextUnlocked = true;
+      console.log('[AudioManager] AudioContext unlocked successfully.');
+    } catch (e) {
+      console.warn('[AudioManager] AudioContext unlock failed:', e);
+    }
   }
 
   setVolume(vol) {
@@ -69,7 +89,7 @@ class AudioManager {
   }
 
   getFunnyMessage(eventType) {
-    const list = FUNNY_MESSAGES[eventType] || ['Focus Guard is watching you!'];
+    const list = FUNNY_MESSAGES[eventType] || ['FocusGuard is watching you!'];
     const randomIndex = Math.floor(Math.random() * list.length);
     return list[randomIndex];
   }
@@ -106,18 +126,21 @@ class AudioManager {
     for (const audioPath of paths) {
       try {
         const audio = new Audio(audioPath);
-        audio.volume = this.volume;
+        audio.volume = this.muted ? 0 : this.volume;
+        audio.preload = 'auto';
         this.currentAudio = audio;
 
-        const playPromise = audio.play();
-        if (playPromise !== undefined) {
-          await playPromise;
-          playedSuccessfully = true;
-          break;
-        }
+        await audio.play();
+        playedSuccessfully = true;
+        console.log(`[AudioManager] Playing: ${audioPath}`);
+        break;
       } catch (err) {
-        console.warn(`Audio playback attempt failed for ${audioPath}:`, err);
+        console.warn(`[AudioManager] Playback failed for ${audioPath}:`, err.message);
       }
+    }
+
+    if (!playedSuccessfully) {
+      console.error(`[AudioManager] All audio paths failed for event: ${eventType}`);
     }
 
     return { played: playedSuccessfully };

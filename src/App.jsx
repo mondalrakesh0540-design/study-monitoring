@@ -117,9 +117,16 @@ export default function App() {
     audioManager.setMute(nextMuted);
   };
 
+  // Wrapped startCamera that also unlocks AudioContext on user gesture
+  const handleStartCamera = useCallback(async () => {
+    await audioManager.unlockAudioContext();
+    startCamera();
+  }, [startCamera]);
+
   // Start Study Session
-  const startStudy = () => {
+  const startStudy = async () => {
     if (!isCameraReady) return;
+    await audioManager.unlockAudioContext(); // Ensure audio is unlocked
     setIsMonitoring(true);
     setSessionStatus('Focused');
 
@@ -396,7 +403,7 @@ export default function App() {
         <footer className="hud-bottom-dock">
           <div className="dock-controls-group">
             {cameraStatus !== CAMERA_STATUS.READY ? (
-              <button className="btn btn-primary" onClick={startCamera}>
+              <button className="btn btn-primary" onClick={handleStartCamera}>
                 <Camera size={18} /> Start Camera
               </button>
             ) : (
