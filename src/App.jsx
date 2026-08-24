@@ -12,6 +12,7 @@ import { StudyControls } from './components/StudyControls';
 import { StatusPanel } from './components/StatusPanel';
 import { SessionTimer } from './components/SessionTimer';
 import { AlertHistory } from './components/AlertHistory';
+import { AudioSettingsCard } from './components/AudioSettingsCard';
 
 import { ShieldCheck, Sparkles } from 'lucide-react';
 import './App.css';
@@ -152,7 +153,7 @@ export default function App() {
         const msg = audioManager.getFunnyMessage('distracted');
         setFunnyMessage(msg);
         audioManager.playAudio('distracted', false, msg);
-        addEvent('distracted', 'Distraction / Sleeping', 'Student looking away or sleeping for 4+ seconds!');
+        addEvent('distracted', 'Distraction / Phone', 'Student looking away or at phone for 3+ seconds!');
       }
     } else if (isFaceDetected && !isDistracted) {
       if (sessionStatus === 'Face Not Detected' || sessionStatus === 'Distracted') {
@@ -203,7 +204,7 @@ export default function App() {
 
       {/* Main Grid Layout */}
       <main className="dashboard-grid">
-        {/* Left Column: Camera Preview & Study Controls */}
+        {/* Left Column: Camera Preview, Study Controls, Custom Audio Upload */}
         <section className="dashboard-col left-col">
           <CameraMonitor
             videoRef={videoRef}
@@ -222,6 +223,8 @@ export default function App() {
             stopStudy={stopStudy}
             resetSession={resetSession}
           />
+
+          <AudioSettingsCard />
         </section>
 
         {/* Right Column: Status Banner, Timers, History */}
