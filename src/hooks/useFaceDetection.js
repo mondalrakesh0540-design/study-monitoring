@@ -53,7 +53,7 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
         console.error('MediaPipe Detector Initialization Error:', err);
         if (isSubscribed) {
           setDetectorReady(false);
-          setModelError('Face detection model failed to load. Check network connection or WASM support.');
+          setModelError('Face detection model failed to load. Check network connection.');
         }
       }
     }
@@ -84,8 +84,8 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
     }
 
     const now = performance.now();
-    // Throttle detection interval to ~250ms to keep CPU usage low
-    if (now - lastDetectTimeRef.current >= 250) {
+    // Throttle detection interval to ~200ms for high responsiveness & low CPU
+    if (now - lastDetectTimeRef.current >= 200) {
       lastDetectTimeRef.current = now;
 
       try {
@@ -100,20 +100,27 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
 
           const firstFace = detections[0];
           const bbox = firstFace.boundingBox;
-          setFaceBoundingBox(bbox);
-
-          // Distraction check: examine bounding box position & keypoints
-          let distracted = false;
+          
           if (bbox && video.videoWidth > 0 && video.videoHeight > 0) {
+            setFaceBoundingBox({
+              originX: bbox.originX,
+              originY: bbox.originY,
+              width: bbox.width,
+              height: bbox.height,
+              videoWidth: video.videoWidth,
+              videoHeight: video.videoHeight
+            });
+
+            let distracted = false;
             const centerX = (bbox.originX + bbox.width / 2) / video.videoWidth;
             const centerY = (bbox.originY + bbox.height / 2) / video.videoHeight;
 
-            // If face is shifted too far off-center (head turned left/right/up/down)
-            if (centerX < 0.15 || centerX > 0.85 || centerY < 0.10 || centerY > 0.90) {
+            // Distraction test 1: Face shifted out of main frame
+            if (centerX < 0.08 || centerX > 0.92 || centerY < 0.05 || centerY > 0.95) {
               distracted = true;
             }
 
-            // Keypoints check (0: right eye, 1: left eye, 2: nose tip)
+            // Distraction test 2: Keypoints orientation (Right eye: 0, Left eye: 1, Nose: 2)
             if (firstFace.keypoints && firstFace.keypoints.length >= 3) {
               const rightEye = firstFace.keypoints[0];
               const leftEye = firstFace.keypoints[1];
@@ -121,30 +128,33 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
 
               if (rightEye && leftEye && nose) {
                 const eyeDist = Math.abs(leftEye.x - rightEye.x);
-                const noseEyeOffset = Math.abs(nose.x - (rightEye.x + leftEye.x) / 2);
-                if (eyeDist > 0 && noseEyeOffset / eyeDist > 0.35) {
-                  distracted = true; // Head turned sideways
+                const eyeCenter = (rightEye.x + leftEye.x) / 2;
+                const noseOffset = Math.abs(nose.x - eyeCenter);
+
+                // Significant turn away threshold
+                if (eyeDist > 0 && noseOffset / eyeDist > 0.48) {
+                  distracted = true;
                 }
               }
             }
-          }
 
-          if (distracted) {
-            if (!distractedStartTimeRef.current) {
-              distractedStartTimeRef.current = Date.now();
+            if (distracted) {
+              if (!distractedStartTimeRef.current) {
+                distractedStartTimeRef.current = Date.now();
+              }
+              const distSec = Math.floor((Date.now() - distractedStartTimeRef.current) / 1000);
+              setDistractedDuration(distSec);
+              if (distSec >= 5) {
+                setIsDistracted(true);
+              }
+            } else {
+              distractedStartTimeRef.current = null;
+              setDistractedDuration(0);
+              setIsDistracted(false);
             }
-            const distSec = Math.floor((Date.now() - distractedStartTimeRef.current) / 1000);
-            setDistractedDuration(distSec);
-            if (distSec >= 5) {
-              setIsDistracted(true);
-            }
-          } else {
-            distractedStartTimeRef.current = null;
-            setDistractedDuration(0);
-            setIsDistracted(false);
           }
         } else {
-          // Face missing
+          // No face visible
           setFaceBoundingBox(null);
           setIsFaceDetected(false);
           setIsDistracted(false);
@@ -176,7 +186,6 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
         cancelAnimationFrame(animFrameIdRef.current);
         animFrameIdRef.current = null;
       }
-      // Reset counters when monitoring stops
       missingStartTimeRef.current = null;
       distractedStartTimeRef.current = null;
       setMissingDuration(0);

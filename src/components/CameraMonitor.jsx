@@ -31,6 +31,36 @@ export function CameraMonitor({
     }
   };
 
+  // Calculate percentage overlay coordinates accounting for video horizontal mirror
+  const renderBoundingBox = () => {
+    if (!isMonitoring || !faceBoundingBox || cameraStatus !== CAMERA_STATUS.READY) {
+      return null;
+    }
+
+    const { originX, originY, width, height, videoWidth, videoHeight } = faceBoundingBox;
+    if (!videoWidth || !videoHeight) return null;
+
+    // Flip X for mirrored video display
+    const leftPercent = ((videoWidth - originX - width) / videoWidth) * 100;
+    const topPercent = (originY / videoHeight) * 100;
+    const widthPercent = (width / videoWidth) * 100;
+    const heightPercent = (height / videoHeight) * 100;
+
+    return (
+      <div
+        className="face-bbox"
+        style={{
+          left: `${leftPercent}%`,
+          top: `${topPercent}%`,
+          width: `${widthPercent}%`,
+          height: `${heightPercent}%`
+        }}
+      >
+        <span className="bbox-label">Target Focused</span>
+      </div>
+    );
+  };
+
   return (
     <div className="card camera-card">
       <div className="card-header">
@@ -61,20 +91,7 @@ export function CameraMonitor({
           </div>
         )}
 
-        {/* Bounding box overlay for detected face */}
-        {isMonitoring && faceBoundingBox && cameraStatus === CAMERA_STATUS.READY && (
-          <div
-            className="face-bbox"
-            style={{
-              left: `${faceBoundingBox.originX}px`,
-              top: `${faceBoundingBox.originY}px`,
-              width: `${faceBoundingBox.width}px`,
-              height: `${faceBoundingBox.height}px`
-            }}
-          >
-            <span className="bbox-label">Target Focused</span>
-          </div>
-        )}
+        {renderBoundingBox()}
       </div>
 
       {errorMessage && (
