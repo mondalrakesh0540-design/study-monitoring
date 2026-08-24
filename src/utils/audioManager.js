@@ -1,13 +1,13 @@
 // src/utils/audioManager.js
-// Plays ONLY user-provided custom MPEG audio files.
+// Plays user-provided custom MP3/MPEG audio files with multi-format browser fallback.
 
 const AUDIO_FILES = {
-  'start-study': '/audio/start-study.mpeg',
-  'tab-change': '/audio/tab-change.mpeg',
-  'face-missing': '/audio/face-missing.mpeg',
-  'distracted': '/audio/distracted.mpeg',
-  'back-to-study': '/audio/back-to-study.mpeg',
-  'sleep-warning': '/audio/sleep-warning.mpeg',
+  'start-study': ['/audio/start-study.mp3', '/audio/start-study.mpeg'],
+  'tab-change': ['/audio/tab-change.mp3', '/audio/tab-change.mpeg'],
+  'face-missing': ['/audio/face-missing.mp3', '/audio/face-missing.mpeg'],
+  'distracted': ['/audio/distracted.mp3', '/audio/distracted.mpeg'],
+  'back-to-study': ['/audio/back-to-study.mp3', '/audio/back-to-study.mpeg'],
+  'sleep-warning': ['/audio/sleep-warning.mp3', '/audio/sleep-warning.mpeg'],
 };
 
 const FUNNY_MESSAGES = {
@@ -43,7 +43,7 @@ class AudioManager {
     this.volume = 0.8;
     this.muted = false;
     this.lastPlayTimes = {};
-    this.cooldownMs = 5000;
+    this.cooldownMs = 4000;
   }
 
   setVolume(vol) {
@@ -100,25 +100,27 @@ class AudioManager {
     this.stopCurrent();
     this.lastPlayTimes[eventType] = Date.now();
 
-    const audioPath = AUDIO_FILES[eventType];
-    if (!audioPath) return { played: false, reason: 'no_file' };
+    const paths = AUDIO_FILES[eventType] || [];
+    let playedSuccessfully = false;
 
-    try {
-      const audio = new Audio(audioPath);
-      audio.volume = this.volume;
-      this.currentAudio = audio;
+    for (const audioPath of paths) {
+      try {
+        const audio = new Audio(audioPath);
+        audio.volume = this.volume;
+        this.currentAudio = audio;
 
-      const playPromise = audio.play();
-      if (playPromise !== undefined) {
-        await playPromise.catch((err) => {
-          console.warn('Custom audio playback error:', err);
-        });
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+          await playPromise;
+          playedSuccessfully = true;
+          break;
+        }
+      } catch (err) {
+        console.warn(`Audio playback attempt failed for ${audioPath}:`, err);
       }
-      return { played: true, path: audioPath };
-    } catch (err) {
-      console.warn('Audio play error:', err);
-      return { played: false, error: err };
     }
+
+    return { played: playedSuccessfully };
   }
 }
 

@@ -44,7 +44,7 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
             delegate: 'GPU'
           },
           runningMode: 'VIDEO',
-          minDetectionConfidence: 0.35
+          minDetectionConfidence: 0.3
         });
 
         if (!isSubscribed) {
@@ -136,7 +136,7 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
             const centerY = (bbox.originY + bbox.height / 2) / video.videoHeight;
 
             // Test 1: Slumped down on desk/keyboard or head tilted out of camera view
-            if (centerY > 0.65 || centerY < 0.10 || centerX < 0.10 || centerX > 0.90) {
+            if (centerY > 0.62 || centerY < 0.10 || centerX < 0.10 || centerX > 0.90) {
               phoneOrLightSleep = true;
             }
 
@@ -155,12 +155,12 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
                 const noseYDist = nose.y - eyeY;
 
                 // Turned away looking at phone/side
-                if (eyeDist > 0 && noseXOffset / eyeDist > 0.40) {
+                if (eyeDist > 0 && noseXOffset / eyeDist > 0.38) {
                   phoneOrLightSleep = true;
                 }
 
                 // Head tilted down / eyes closed / light sleep (noseYDist decreases)
-                if (eyeDist > 0 && (noseYDist / eyeDist < 0.28 || noseYDist < 0)) {
+                if (noseYDist < 0.06 || (eyeDist > 0 && noseYDist / eyeDist < 0.32)) {
                   phoneOrLightSleep = true;
                 }
               }
