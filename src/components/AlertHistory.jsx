@@ -2,7 +2,7 @@
 // Displays a log of recent study monitoring events and alerts (latest 10 entries).
 
 import React from 'react';
-import { History, Bell, CheckCircle, AlertTriangle, EyeOff, ShieldStop } from 'lucide-react';
+import { History, Bell, CheckCircle, AlertTriangle, EyeOff, ShieldX } from 'lucide-react';
 
 export function AlertHistory({ events }) {
   const getEventIcon = (type) => {
@@ -18,7 +18,7 @@ export function AlertHistory({ events }) {
       case 'tab-change':
         return <Bell size={16} className="icon-yellow" />;
       case 'stop-study':
-        return <ShieldStop size={16} className="icon-gray" />;
+        return <ShieldX size={16} className="icon-gray" />;
       default:
         return <Bell size={16} className="icon-blue" />;
     }
