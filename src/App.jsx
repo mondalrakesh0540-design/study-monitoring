@@ -1,31 +1,19 @@
 // src/App.jsx
-// FocusGuard AI - Immersive Fullscreen Camera HUD Main Application Component
+// FocusGuard AI - Main Application Component
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useCamera, CAMERA_STATUS } from './hooks/useCamera';
+import { useCamera } from './hooks/useCamera';
 import { useFaceDetection } from './hooks/useFaceDetection';
 import { useVisibilityMonitor } from './hooks/useVisibilityMonitor';
 import { audioManager } from './utils/audioManager';
 
-import {
-  ShieldCheck,
-  Heart,
-  Camera,
-  CameraOff,
-  Play,
-  Square,
-  RotateCcw,
-  Volume2,
-  VolumeX,
-  ShieldAlert,
-  Bug,
-  History,
-  Maximize2,
-  Minimize2,
-  Clock,
-  CheckCircle2,
-  AlertOctagon,
-} from 'lucide-react';
+import { CameraMonitor } from './components/CameraMonitor';
+import { StudyControls } from './components/StudyControls';
+import { StatusPanel } from './components/StatusPanel';
+import { SessionTimer } from './components/SessionTimer';
+import { AlertHistory } from './components/AlertHistory';
+
+import { ShieldCheck, Heart } from 'lucide-react';
 import './App.css';
 
 export default function App() {
@@ -34,11 +22,6 @@ export default function App() {
   const [funnyMessage, setFunnyMessage] = useState('');
   const [volume, setVolumeState] = useState(0.8);
   const [isMuted, setIsMutedState] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-
-  // Drawer Toggles
-  const [showHistory, setShowHistory] = useState(false);
-  const [showDebug, setShowDebug] = useState(false);
 
   // Timers State
   const [totalTime, setTotalTime] = useState(0);
@@ -56,7 +39,7 @@ export default function App() {
 
   // Auto-clear funny message after 6 seconds
   const setFunnyMessageWithTimeout = useCallback((msg) => {
-    setFunnyMessageWithTimeout(msg);
+    setFunnyMessage(msg);
     if (funnyMessageTimerRef.current) clearTimeout(funnyMessageTimerRef.current);
     funnyMessageTimerRef.current = setTimeout(() => setFunnyMessage(''), 6000);
   }, []);
@@ -81,17 +64,6 @@ export default function App() {
     distractedDuration,
     faceBoundingBox
   } = useFaceDetection({ videoRef, isCameraReady, isMonitoring });
-
-  // Toggle Fullscreen Mode
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().then(() => setIsFullscreen(true)).catch(() => {});
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen().then(() => setIsFullscreen(false)).catch(() => {});
-      }
-    }
-  };
 
   // Event Helper
   const addEvent = useCallback((type, title, message) => {
@@ -123,10 +95,10 @@ export default function App() {
     startCamera();
   }, [startCamera]);
 
-  // Start Study Session
+  // Start Study Session (async to unlock audio)
   const startStudy = async () => {
     if (!isCameraReady) return;
-    await audioManager.unlockAudioContext(); // Ensure audio is unlocked
+    await audioManager.unlockAudioContext();
     setIsMonitoring(true);
     setSessionStatus('Focused');
 
@@ -144,7 +116,7 @@ export default function App() {
   const stopStudy = () => {
     setIsMonitoring(false);
     setSessionStatus('Paused');
-    setFunnyMessage('Study session paused.');
+    setFunnyMessageWithTimeout('Study session paused.');
     audioManager.stopCurrent();
     addEvent('stop-study', 'Session Stopped', 'Monitoring paused by user.');
   };
@@ -172,7 +144,7 @@ export default function App() {
     setFunnyMessageWithTimeout(msg);
     audioManager.playAudio('tab-change', false);
     addEvent('tab-change', 'Tab Changed', 'Switched browser tab or minimized window!');
-  }, [isMonitoring, addEvent]);
+  }, [isMonitoring, addEvent, setFunnyMessageWithTimeout]);
 
   const handleTabReturn = useCallback(() => {
     if (!isMonitoring) return;
@@ -181,7 +153,7 @@ export default function App() {
     setFunnyMessageWithTimeout(msg);
     audioManager.playAudio('back-to-study', false);
     addEvent('back-to-study', 'User Returned', 'Returned to study browser tab.');
-  }, [isMonitoring, addEvent]);
+  }, [isMonitoring, addEvent, setFunnyMessageWithTimeout]);
 
   useVisibilityMonitor({
     isMonitoring,
@@ -232,7 +204,7 @@ export default function App() {
         addEvent('back-to-study', 'User Returned', 'Eyes open, focus restored!');
       }
     }
-  }, [isMonitoring, missingDuration, distractedDuration, isDistracted, isFaceDetected, addEvent]);
+  }, [isMonitoring, missingDuration, distractedDuration, isDistracted, isFaceDetected, addEvent, setFunnyMessageWithTimeout]);
 
   // Session Duration Timer Loop
   useEffect(() => {
@@ -255,234 +227,80 @@ export default function App() {
     };
   }, [isMonitoring]);
 
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-  };
-
-  const getStatusTheme = () => {
-    switch (sessionStatus) {
-      case 'Focused':
-        return { text: '🟢 Focused & Studying', bgClass: 'status-focused' };
-      case 'Face Not Detected':
-        return { text: '🚨 Face Missing / Covered', bgClass: 'status-alert' };
-      case 'Light Sleep / Distracted (5s)':
-        return { text: '⚠️ Light Sleep (5s)', bgClass: 'status-alert' };
-      case 'Deep Sleep (30s+)':
-        return { text: '🚨 Deep Sleep (30s+)', bgClass: 'status-alert' };
-      case 'Tab Changed':
-        return { text: '👀 Tab Switched', bgClass: 'status-warning' };
-      case 'Paused':
-        return { text: '⏸️ Session Paused', bgClass: 'status-paused' };
-      default:
-        return { text: '⚪ Session Ready', bgClass: 'status-idle' };
-    }
-  };
-
-  const theme = getStatusTheme();
-
-  // Bounding box overlay calculation
-  const renderBoundingBox = () => {
-    if (!isMonitoring || !faceBoundingBox || cameraStatus !== CAMERA_STATUS.READY) return null;
-    const { originX, originY, width, height, videoWidth, videoHeight } = faceBoundingBox;
-    if (!videoWidth || !videoHeight) return null;
-
-    const leftPercent = ((videoWidth - originX - width) / videoWidth) * 100;
-    const topPercent = (originY / videoHeight) * 100;
-    const widthPercent = (width / videoWidth) * 100;
-    const heightPercent = (height / videoHeight) * 100;
-
-    return (
-      <div
-        className="face-bbox"
-        style={{
-          left: `${leftPercent}%`,
-          top: `${topPercent}%`,
-          width: `${widthPercent}%`,
-          height: `${heightPercent}%`
-        }}
-      >
-        <span className="bbox-label">Target Focused</span>
-      </div>
-    );
-  };
-
   return (
     <div className="app-container">
-      {/* LAYER 1: Fullscreen Camera Video Layer */}
-      <div className="fullscreen-video-wrapper">
-        <video
-          ref={videoRef}
-          playsInline
-          muted
-          autoPlay
-          className={`webcam-video ${cameraStatus === CAMERA_STATUS.READY ? 'active' : 'inactive'}`}
-        />
-
-        {cameraStatus !== CAMERA_STATUS.READY && (
-          <div className="video-placeholder">
-            <CameraOff size={64} className="placeholder-icon" />
-            <h2>
-              {cameraStatus === CAMERA_STATUS.REQUESTING
-                ? 'Requesting webcam access...'
-                : 'Turn on Camera to start full-screen study monitoring'}
-            </h2>
-            {cameraError && <div className="error-alert">{cameraError}</div>}
-          </div>
-        )}
-
-        {renderBoundingBox()}
-      </div>
-
-      {/* LAYER 2: Floating Heads-Up Display (HUD) */}
-      <div className="hud-overlay-container">
-        {/* Top Header Floating HUD Bar */}
-        <header className="hud-top-bar">
-          <div className="logo-container">
-            <ShieldCheck className="logo-icon" size={28} />
+      {/* Header */}
+      <header className="app-header">
+        <div className="logo-container">
+          <ShieldCheck className="logo-icon" size={36} />
+          <div>
             <h1 className="app-title">FocusGuard AI</h1>
-          </div>
-
-          <div className={`hud-status-banner ${theme.bgClass}`}>
-            <span>{theme.text}</span>
-          </div>
-
-          <div className="header-right-actions">
-            <div className="audio-controls">
-              <button className="btn-icon" onClick={handleMuteToggle} title={isMuted ? 'Unmute' : 'Mute'}>
-                {isMuted || volume === 0 ? <VolumeX size={18} /> : <Volume2 size={18} />}
-              </button>
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.05"
-                value={isMuted ? 0 : volume}
-                onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
-                className="volume-slider"
-              />
-            </div>
-
-            <div className="drawer-toggle-btns">
-              <button
-                className="btn-icon"
-                onClick={() => { setShowHistory(!showHistory); setShowDebug(false); }}
-                title="Activity Log"
-              >
-                <History size={18} />
-              </button>
-
-              <button
-                className="btn-icon"
-                onClick={() => { setShowDebug(!showDebug); setShowHistory(false); }}
-                title="Debug Diagnostics"
-              >
-                <Bug size={18} />
-              </button>
-
-              <button className="btn-icon" onClick={toggleFullscreen} title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}>
-                {isFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
-              </button>
-            </div>
-          </div>
-        </header>
-
-        {/* Center Floating Funny Alert Box */}
-        {funnyMessage && (
-          <div className="hud-center-alert">
-            <ShieldAlert className="message-icon" size={32} />
-            <div>
-              <span className="message-title">Guard Alert:</span>
-              <p className="message-body">"{funnyMessage}"</p>
-            </div>
-          </div>
-        )}
-
-        {/* Bottom Floating Control Dock */}
-        <footer className="hud-bottom-dock">
-          <div className="dock-controls-group">
-            {cameraStatus !== CAMERA_STATUS.READY ? (
-              <button className="btn btn-primary" onClick={handleStartCamera}>
-                <Camera size={18} /> Start Camera
-              </button>
-            ) : (
-              <button className="btn btn-secondary" onClick={stopCamera} disabled={isMonitoring}>
-                <CameraOff size={18} /> Stop Camera
-              </button>
-            )}
-
-            {!isMonitoring ? (
-              <button className="btn btn-success" onClick={startStudy} disabled={!isCameraReady}>
-                <Play size={18} /> Start Study
-              </button>
-            ) : (
-              <button className="btn btn-danger" onClick={stopStudy}>
-                <Square size={18} /> Stop Session
-              </button>
-            )}
-
-            <button className="btn btn-outline" onClick={resetSession}>
-              <RotateCcw size={16} /> Reset
-            </button>
-          </div>
-
-          <div className="dock-timer-info">
-            <div className="timer-pill">
-              <Clock size={16} />
-              <span>{formatTime(totalTime)}</span>
-            </div>
-
-            <div className="timer-pill focused">
-              <CheckCircle2 size={16} />
-              <span>{formatTime(focusedTime)}</span>
-            </div>
-
-            <div className="timer-pill distracted">
-              <AlertOctagon size={16} />
-              <span>{formatTime(distractedTime)}</span>
-            </div>
-          </div>
-
-          <div className="hud-credits">
-            <span>Dev by <strong>Rakesh</strong> & <strong>Ani (main developer)</strong> <Heart size={14} className="heart-icon" inline="true" /></span>
-          </div>
-        </footer>
-      </div>
-
-      {/* Floating Side Drawers for Debug / History */}
-      {showDebug && (
-        <div className="hud-drawer">
-          <h4 style={{ margin: '0 0 8px 0', fontSize: '0.9rem' }}>System Diagnostics</h4>
-          <div className="debug-grid">
-            <div className="debug-item"><span className="label">Face:</span><span className={`val ${isFaceDetected ? 'val-yes' : 'val-no'}`}>{isFaceDetected ? 'Yes' : 'No'}</span></div>
-            <div className="debug-item"><span className="label">Missing:</span><span className="val">{missingDuration}s</span></div>
-            <div className="debug-item"><span className="label">Distracted:</span><span className="val">{distractedDuration}s</span></div>
-            <div className="debug-item"><span className="label">Camera:</span><span className="val">{cameraStatus}</span></div>
-            <div className="debug-item"><span className="label">Model:</span><span className={`val ${detectorReady ? 'val-yes' : 'val-no'}`}>{detectorReady ? 'Ready' : 'Loading'}</span></div>
+            <p className="app-subtitle">
+              Funny AI-Powered Study & Webcam Monitor
+            </p>
           </div>
         </div>
-      )}
+      </header>
 
-      {showHistory && (
-        <div className="hud-drawer">
-          <h4 style={{ margin: '0 0 8px 0', fontSize: '0.9rem' }}>Recent Alerts ({events.length}/10)</h4>
-          {events.length === 0 ? (
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>No alerts logged yet.</p>
-          ) : (
-            <div className="history-list">
-              {events.map((evt) => (
-                <div key={evt.id} className="history-item">
-                  <div>
-                    <div style={{ fontWeight: 700 }}>{evt.title} <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{evt.timestamp}</span></div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{evt.message}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+      {/* Main Grid Layout */}
+      <main className="dashboard-grid">
+        {/* Left Column: Camera Preview & Study Controls */}
+        <section className="dashboard-col left-col">
+          <CameraMonitor
+            videoRef={videoRef}
+            cameraStatus={cameraStatus}
+            errorMessage={cameraError || modelError}
+            startCamera={handleStartCamera}
+            stopCamera={stopCamera}
+            isMonitoring={isMonitoring}
+            faceBoundingBox={faceBoundingBox}
+          />
+
+          <StudyControls
+            isCameraReady={isCameraReady}
+            isMonitoring={isMonitoring}
+            startStudy={startStudy}
+            stopStudy={stopStudy}
+            resetSession={resetSession}
+          />
+        </section>
+
+        {/* Right Column: Status Banner, Timers, History */}
+        <section className="dashboard-col right-col">
+          <StatusPanel
+            sessionStatus={sessionStatus}
+            funnyMessage={funnyMessage}
+            volume={volume}
+            isMuted={isMuted}
+            onVolumeChange={handleVolumeChange}
+            onMuteToggle={handleMuteToggle}
+            debugInfo={{
+              isFaceDetected,
+              missingDuration,
+              distractedDuration,
+              cameraStatus,
+              isMonitoring,
+              detectorReady
+            }}
+          />
+
+          <SessionTimer
+            totalTime={totalTime}
+            focusedTime={focusedTime}
+            distractedTime={distractedTime}
+          />
+
+          <AlertHistory events={events} />
+        </section>
+      </main>
+
+      {/* Footer & Credits */}
+      <footer className="app-footer">
+        <p>FocusGuard AI • 100% Local Browser Detection • Privacy First</p>
+        <p className="app-credits">
+          Developed by <strong>Rakesh</strong> and Collaborated with <strong>Ani (main developer)</strong> <Heart size={14} className="heart-icon" />
+        </p>
+      </footer>
     </div>
   );
 }
