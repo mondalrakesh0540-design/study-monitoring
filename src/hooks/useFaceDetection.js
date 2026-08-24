@@ -1,5 +1,5 @@
 // src/hooks/useFaceDetection.js
-// Custom React hook for MediaPipe browser-based face presence, sleep/head-slump posture, and distraction detection.
+// Custom React hook for MediaPipe browser-based face presence, phone/distraction detection, and sleep posture.
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { FaceDetector, FilesetResolver } from '@mediapipe/tasks-vision';
@@ -44,7 +44,7 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
             delegate: 'GPU'
           },
           runningMode: 'VIDEO',
-          minDetectionConfidence: 0.4
+          minDetectionConfidence: 0.35
         });
 
         if (!isSubscribed) {
@@ -89,11 +89,10 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
     }
 
     const now = performance.now();
-    // Run detection loop at ~200ms interval (5 FPS) for CPU efficiency
+    // Run detection loop at ~200ms interval (5 FPS)
     if (now - lastDetectTimeRef.current >= 200) {
       lastDetectTimeRef.current = now;
 
-      // Ensure timestamp is strictly monotonic integer to satisfy MediaPipe requirements
       const nowMs = Math.round(now);
       const timestampMs = Math.max(nowMs, lastTimestampMsRef.current + 1);
       lastTimestampMsRef.current = timestampMs;
@@ -111,7 +110,6 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
           consecutivePresentRef.current = 0;
         }
 
-        // Require at least 2 consecutive frames to confirm face presence/absence
         const confirmedHasFace = consecutivePresentRef.current >= 2;
         const confirmedMissing = consecutiveMissingRef.current >= 2;
 
@@ -133,13 +131,13 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
               videoHeight: video.videoHeight
             });
 
-            let distractedOrSleeping = false;
+            let phoneOrDistracted = false;
             const centerX = (bbox.originX + bbox.width / 2) / video.videoWidth;
             const centerY = (bbox.originY + bbox.height / 2) / video.videoHeight;
 
-            // Test 1: Slumped down on desk/keyboard or head tilted out of camera view
-            if (centerY > 0.68 || centerY < 0.10 || centerX < 0.10 || centerX > 0.90) {
-              distractedOrSleeping = true;
+            // Test 1: Looking down at phone in hands or leaning down
+            if (centerY > 0.65 || centerY < 0.10 || centerX < 0.10 || centerX > 0.90) {
+              phoneOrDistracted = true;
             }
 
             // Test 2: Keypoints orientation (Right eye: 0, Left eye: 1, Nose: 2)
@@ -156,25 +154,25 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
                 const noseXOffset = Math.abs(nose.x - eyeX);
                 const noseYDist = nose.y - eyeY;
 
-                // Horizontal turn away
-                if (eyeDist > 0 && noseXOffset / eyeDist > 0.45) {
-                  distractedOrSleeping = true;
+                // Turned away looking at phone/side
+                if (eyeDist > 0 && noseXOffset / eyeDist > 0.40) {
+                  phoneOrDistracted = true;
                 }
 
-                // Head bowed down / sleeping (nose moves up towards eye level relative to face height)
-                if (eyeDist > 0 && (noseYDist / eyeDist < 0.22 || noseYDist < 0)) {
-                  distractedOrSleeping = true;
+                // Head tilted down looking at phone screen (noseYDist decreases)
+                if (eyeDist > 0 && (noseYDist / eyeDist < 0.28 || noseYDist < 0)) {
+                  phoneOrDistracted = true;
                 }
               }
             }
 
-            if (distractedOrSleeping) {
+            if (phoneOrDistracted) {
               if (!distractedStartTimeRef.current) {
                 distractedStartTimeRef.current = Date.now();
               }
               const distSec = Math.floor((Date.now() - distractedStartTimeRef.current) / 1000);
               setDistractedDuration(distSec);
-              if (distSec >= 4) {
+              if (distSec >= 3) {
                 setIsDistracted(true);
               }
             } else {
@@ -184,7 +182,6 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
             }
           }
         } else if (confirmedMissing) {
-          // No face detected (person left camera or dropped head completely onto desk)
           setFaceBoundingBox(null);
           setIsFaceDetected(false);
           setIsDistracted(false);
