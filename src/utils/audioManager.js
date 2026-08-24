@@ -1,13 +1,13 @@
 // src/utils/audioManager.js
-// Manages user-provided custom MPEG/MP3 audio playback, Web Audio API synth fallback, Web Speech API voice speech, and funny alert messages.
+// Manages user-provided custom MPEG audio playback, Web Audio API synth fallback, Web Speech API voice speech, and funny alert messages.
 
 const AUDIO_FILES = {
   'start-study': '/audio/start-study.mpeg',
   'tab-change': '/audio/tab-change.mpeg',
-  'face-missing': '/audio/when my face fully  cover by book.mpeg',
+  'face-missing': '/audio/face-missing.mpeg',
   'distracted': '/audio/distracted.mpeg',
   'back-to-study': '/audio/back-to-study.mpeg',
-  'sleep-warning': '/audio/when i dont open my eyes more then 30 secont aftar first alart.mpeg',
+  'sleep-warning': '/audio/sleep-warning.mpeg',
 };
 
 const FUNNY_MESSAGES = {
@@ -42,8 +42,8 @@ class AudioManager {
     this.currentAudio = null;
     this.volume = 0.8;
     this.muted = false;
-    this.lastPlayTimes = {}; // Stores timestamps for cooldown check
-    this.cooldownMs = 6000; // Minimum 6 seconds between repetitive alerts
+    this.lastPlayTimes = {};
+    this.cooldownMs = 6000;
     this.audioContext = null;
   }
 
