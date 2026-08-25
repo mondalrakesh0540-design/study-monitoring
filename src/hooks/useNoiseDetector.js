@@ -1,9 +1,10 @@
 // src/hooks/useNoiseDetector.js
 // Custom React hook to monitor ambient environmental noise and talking in real-time.
+// Features adaptive noise baseline and sensitivity control.
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 
-export function useNoiseDetector({ isMonitoring, isCameraReady }) {
+export function useNoiseDetector({ isMonitoring, isCameraReady, sensitivity = 50 }) {
   const [noiseLevel, setNoiseLevel] = useState(0);
   const [isLoudNoise, setIsLoudNoise] = useState(false);
   const [micActive, setMicActive] = useState(false);
@@ -14,6 +15,7 @@ export function useNoiseDetector({ isMonitoring, isCameraReady }) {
   const micStreamRef = useRef(null);
   const animFrameRef = useRef(null);
   const loudNoiseCountRef = useRef(0);
+  const baselineRef = useRef(5);
 
   const startMic = useCallback(async () => {
     try {
@@ -33,7 +35,7 @@ export function useNoiseDetector({ isMonitoring, isCameraReady }) {
       const source = audioCtx.createMediaStreamSource(stream);
       const analyser = audioCtx.createAnalyser();
       analyser.fftSize = 256;
-      analyser.smoothingTimeConstant = 0.4;
+      analyser.smoothingTimeConstant = 0.3;
       source.connect(analyser);
       analyserRef.current = analyser;
 
@@ -80,7 +82,7 @@ export function useNoiseDetector({ isMonitoring, isCameraReady }) {
     };
   }, [isMonitoring, isCameraReady, startMic, stopMic]);
 
-  // Audio level polling & state classification
+  // Audio level polling & adaptive state classification
   useEffect(() => {
     if (!micActive || !analyserRef.current) return;
 
@@ -95,24 +97,31 @@ export function useNoiseDetector({ isMonitoring, isCameraReady }) {
         sum += dataArray[i];
       }
       const avg = sum / dataArray.length; // 0 to 255
-      const normalized = Math.min(100, Math.round((avg / 120) * 100));
-      setNoiseLevel(normalized);
+      const rawNormalized = Math.min(100, Math.round((avg / 110) * 100));
+
+      // Adaptive baseline tracker
+      baselineRef.current = baselineRef.current * 0.95 + rawNormalized * 0.05;
+      const netLevel = Math.max(0, rawNormalized - Math.floor(baselineRef.current * 0.4));
+      setNoiseLevel(rawNormalized);
+
+      // Sensitivity factor
+      const triggerThreshold = Math.max(25, 60 - Math.round((sensitivity / 100) * 30));
 
       // Noise States
-      if (normalized < 20) {
+      if (rawNormalized < 18) {
         setNoiseState('Quiet 🤫');
-      } else if (normalized < 45) {
+      } else if (rawNormalized < 38) {
         setNoiseState('Whisper / Ambient 🍃');
-      } else if (normalized < 70) {
+      } else if (rawNormalized < 65) {
         setNoiseState('Talking / Chatter 🗣️');
       } else {
-        setNoiseState('Loud Shouting 📢');
+        setNoiseState('Loud Noise / Shouting 📢');
       }
 
-      // Trigger threshold (> 40% sustained)
-      if (normalized > 40) {
+      // Trigger threshold checking
+      if (rawNormalized > triggerThreshold) {
         loudNoiseCountRef.current += 1;
-        if (loudNoiseCountRef.current >= 6) {
+        if (loudNoiseCountRef.current >= 5) {
           setIsLoudNoise(true);
         }
       } else {
@@ -132,7 +141,7 @@ export function useNoiseDetector({ isMonitoring, isCameraReady }) {
         cancelAnimationFrame(animFrameRef.current);
       }
     };
-  }, [micActive]);
+  }, [micActive, sensitivity]);
 
   return {
     noiseLevel,

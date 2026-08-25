@@ -84,13 +84,13 @@ export function StatusPanel({
       <div className="indicators-row">
         <div className="indicator-pill mood-pill">
           <Smile size={16} className="indicator-icon" />
-          <span className="indicator-label">Mood:</span>
+          <span className="indicator-label">Live Expression:</span>
           <span className="indicator-val">{expressionMood}</span>
         </div>
 
         <div className={`indicator-pill noise-pill ${isLoudNoise ? 'noise-alert-pill' : ''}`}>
           <Mic size={16} className="indicator-icon" />
-          <span className="indicator-label">Ambient Sound:</span>
+          <span className="indicator-label">Room Sound:</span>
           <span className="indicator-val">{noiseState} ({noiseLevel}%)</span>
           <div className="mini-noise-bar">
             <div className="mini-noise-fill" style={{ width: `${Math.min(100, noiseLevel * 2)}%` }} />

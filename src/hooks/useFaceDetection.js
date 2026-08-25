@@ -1,11 +1,11 @@
 // src/hooks/useFaceDetection.js
-// Advanced MediaPipe FaceLandmarker with comprehensive Expression & Mood Analysis:
+// Advanced MediaPipe FaceLandmarker with ultra-smooth debounced Expression & Mood Analysis:
+// - Real Sleep & Eye Closure (5s light sleep & 30s deep sleep)
 // - Yawn / Jhamai (jawOpen)
 // - Smile / Laugh (mouthSmile)
 // - Angry / Frown (browDown)
 // - Surprised / Shocked (browInnerUp, eyeWide)
 // - Winking (single eye blink mismatch)
-// - Real Sleep (bilateral EAR + eyeBlink)
 // - Posture & Phone distraction
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -39,11 +39,16 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
   const lastDetectTimeRef = useRef(0);
   const lastTimestampMsRef = useRef(0);
 
-  // Debounce counters
+  // Debounce counters for flicker-free detection
   const consecutivePresentRef = useRef(0);
   const consecutiveMissingRef = useRef(0);
   const consecutiveDistractedRef = useRef(0);
   const consecutiveNormalRef = useRef(0);
+  const consecutiveYawnRef = useRef(0);
+  const consecutiveSmileRef = useRef(0);
+  const consecutiveAngryRef = useRef(0);
+  const consecutiveShockedRef = useRef(0);
+  const consecutiveWinkRef = useRef(0);
 
   // Initialize MediaPipe Vision Task
   useEffect(() => {
@@ -191,27 +196,26 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
         mood = 'Yawning 🥱';
       }
       // 2. Smile / Laughing
-      else if (smileLeft > 0.55 && smileRight > 0.55) {
+      else if (smileLeft > 0.52 && smileRight > 0.52) {
         rawSmile = true;
         mood = 'Smiling / Laughing 😂';
       }
       // 3. Shocked / Surprised / Wide Eyes
-      else if (browInnerUp > 0.50 || (eyeWideLeft > 0.45 && eyeWideRight > 0.45)) {
+      else if (browInnerUp > 0.48 || (eyeWideLeft > 0.42 && eyeWideRight > 0.42)) {
         rawShocked = true;
         mood = 'Shocked / Surprised 😲';
       }
       // 4. Angry / Frowning
-      else if (browDownLeft > 0.48 || browDownRight > 0.48) {
+      else if (browDownLeft > 0.46 || browDownRight > 0.46) {
         rawAngry = true;
         mood = 'Angry / Frowning 😠';
       }
       // 5. Winking
-      else if (Math.abs(blinkLeft - blinkRight) > 0.55 && (blinkLeft > 0.6 || blinkRight > 0.6)) {
+      else if (Math.abs(blinkLeft - blinkRight) > 0.52 && (blinkLeft > 0.55 || blinkRight > 0.55)) {
         rawWinking = true;
         mood = 'Winking 😉';
       }
     } else if (landmarks && landmarks.length >= 468) {
-      // Geometric Fallbacks
       const mouthHeight = Math.hypot(landmarks[13].x - landmarks[14].x, landmarks[13].y - landmarks[14].y);
       const mouthWidth = Math.hypot(landmarks[61].x - landmarks[291].x, landmarks[61].y - landmarks[291].y);
       if (mouthWidth > 0 && mouthHeight / mouthWidth > 0.55) {
@@ -311,11 +315,17 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
               if (pt.y > maxY) maxY = pt.y;
             }
 
+            // Clamp coordinates
+            const originX = Math.max(0, minX * video.videoWidth);
+            const originY = Math.max(0, minY * video.videoHeight);
+            const width = Math.min(video.videoWidth - originX, (maxX - minX) * video.videoWidth);
+            const height = Math.min(video.videoHeight - originY, (maxY - minY) * video.videoHeight);
+
             setFaceBoundingBox({
-              originX: minX * video.videoWidth,
-              originY: minY * video.videoHeight,
-              width: (maxX - minX) * video.videoWidth,
-              height: (maxY - minY) * video.videoHeight,
+              originX,
+              originY,
+              width,
+              height,
               videoWidth: video.videoWidth,
               videoHeight: video.videoHeight
             });
@@ -343,8 +353,8 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
             const bbox = detections[0].boundingBox;
             if (bbox) {
               setFaceBoundingBox({
-                originX: bbox.originX,
-                originY: bbox.originY,
+                originX: Math.max(0, bbox.originX),
+                originY: Math.max(0, bbox.originY),
                 width: bbox.width,
                 height: bbox.height,
                 videoWidth: video.videoWidth,
@@ -373,11 +383,18 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
           setMissingDuration(0);
           setExpressionMood(currentMood);
 
-          setIsYawning(detectedYawn);
-          setIsSmiling(detectedSmile);
-          setIsAngry(detectedAngry);
-          setIsShocked(detectedShocked);
-          setIsWinking(detectedWinking);
+          // 2-frame debouncing for expressions to prevent false single-frame fluttering
+          consecutiveYawnRef.current = detectedYawn ? consecutiveYawnRef.current + 1 : 0;
+          consecutiveSmileRef.current = detectedSmile ? consecutiveSmileRef.current + 1 : 0;
+          consecutiveAngryRef.current = detectedAngry ? consecutiveAngryRef.current + 1 : 0;
+          consecutiveShockedRef.current = detectedShocked ? consecutiveShockedRef.current + 1 : 0;
+          consecutiveWinkRef.current = detectedWinking ? consecutiveWinkRef.current + 1 : 0;
+
+          setIsYawning(consecutiveYawnRef.current >= 2);
+          setIsSmiling(consecutiveSmileRef.current >= 2);
+          setIsAngry(consecutiveAngryRef.current >= 2);
+          setIsShocked(consecutiveShockedRef.current >= 2);
+          setIsWinking(consecutiveWinkRef.current >= 2);
 
           if (isSleepingOrDistracted) {
             consecutiveDistractedRef.current += 1;
@@ -437,6 +454,11 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
       consecutiveMissingRef.current = 0;
       consecutiveDistractedRef.current = 0;
       consecutiveNormalRef.current = 0;
+      consecutiveYawnRef.current = 0;
+      consecutiveSmileRef.current = 0;
+      consecutiveAngryRef.current = 0;
+      consecutiveShockedRef.current = 0;
+      consecutiveWinkRef.current = 0;
       missingStartTimeRef.current = null;
       distractedStartTimeRef.current = null;
       lastTimestampMsRef.current = 0;
