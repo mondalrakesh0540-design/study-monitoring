@@ -2,11 +2,11 @@
 // FocusGuard AI Alert Sound & Funny Student Meme Manager
 
 const AUDIO_FILES = {
-  'start-study': ['/audio/start-study.mp3', '/audio/start-study.wav', 'https://www.myinstants.com/media/sounds/anime-wow-sound-effect.mp3'],
-  'tab-change': ['/audio/tab-change.mp3', '/audio/tab-change.wav', 'https://www.myinstants.com/media/sounds/vine-boom.mp3'],
-  'face-missing': ['/audio/face-missing.mp3', '/audio/face-missing.wav', 'https://www.myinstants.com/media/sounds/asian-meme-huh.mp3'],
+  'start-study': ['/audio/start-study.mp3', '/audio/start-study.wav', 'https://www.myinstants.com/media/sounds/gta-san-andreas-ah-shit-here-we-go-again.mp3'],
+  'tab-change': ['/audio/tab-change.mp3', '/audio/tab-change.wav', 'https://www.myinstants.com/media/sounds/emotional-damage-meme.mp3'],
+  'face-missing': ['/audio/face-missing.mp3', '/audio/face-missing.wav', 'https://www.myinstants.com/media/sounds/why-are-you-running.mp3'],
   'distracted': ['/audio/distracted.mp3', '/audio/distracted.wav', 'https://www.myinstants.com/media/sounds/snore-mimimimimimi.mp3'],
-  'back-to-study': ['/audio/back-to-study.mp3', '/audio/back-to-study.wav', 'https://www.myinstants.com/media/sounds/correct.mp3'],
+  'back-to-study': ['/audio/back-to-study.mp3', '/audio/back-to-study.wav', 'https://www.myinstants.com/media/sounds/noice.mp3'],
   'sleep-warning': ['/audio/sleep-warning.mp3', '/audio/sleep-warning.wav', 'https://www.myinstants.com/media/sounds/loud-alarm-clock.mp3'],
 };
 
