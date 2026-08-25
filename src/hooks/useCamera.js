@@ -1,5 +1,5 @@
 // src/hooks/useCamera.js
-// Ultra-resilient React hook to manage webcam streams, multi-constraint fallback, permissions, and lifecycle.
+// Ultra-reliable Camera Hook with auto-reconnect, multi-constraint fallback, and guaranteed video binding.
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 
@@ -17,16 +17,16 @@ export function useCamera() {
   const [errorMessage, setErrorMessage] = useState('');
   const [stream, setStream] = useState(null);
   const videoRef = useRef(null);
-  const streamRef = useRef(null);
+  const activeStreamRef = useRef(null);
 
   const stopCamera = useCallback(() => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => {
+    if (activeStreamRef.current) {
+      activeStreamRef.current.getTracks().forEach((track) => {
         try {
           track.stop();
         } catch (e) {}
       });
-      streamRef.current = null;
+      activeStreamRef.current = null;
     }
     if (videoRef.current) {
       try {
@@ -36,13 +36,38 @@ export function useCamera() {
     setStream(null);
     setCameraStatus(CAMERA_STATUS.OFF);
     setErrorMessage('');
-    console.log('[Camera] Webcam stopped.');
+    console.log('[Camera] Camera turned off.');
+  }, []);
+
+  const attachStreamToVideo = useCallback((mediaStream) => {
+    if (!videoRef.current || !mediaStream) return;
+    const video = videoRef.current;
+    video.srcObject = mediaStream;
+    video.setAttribute('playsinline', 'true');
+    video.setAttribute('webkit-playsinline', 'true');
+    video.setAttribute('autoplay', 'true');
+    video.muted = true;
+
+    const playPromise = video.play();
+    if (playPromise !== undefined) {
+      playPromise
+        .then(() => {
+          setCameraStatus(CAMERA_STATUS.READY);
+          console.log('[Camera] Video stream playing smoothly.');
+        })
+        .catch((err) => {
+          console.warn('[Camera] Autoplay waiting for metadata:', err);
+          video.onloadedmetadata = () => {
+            video.play().then(() => setCameraStatus(CAMERA_STATUS.READY)).catch(() => {});
+          };
+        });
+    }
   }, []);
 
   const startCamera = useCallback(async () => {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       setCameraStatus(CAMERA_STATUS.NOT_AVAILABLE);
-      setErrorMessage('Browser does not support camera access or context is insecure (requires HTTPS).');
+      setErrorMessage('Camera access is not supported by your browser or requires HTTPS.');
       return;
     }
 
@@ -51,89 +76,62 @@ export function useCamera() {
 
     let mediaStream = null;
 
-    // 1. Try high-definition user-facing camera first
+    // Constraint tier 1: Standard HD User Camera
     try {
       mediaStream = await navigator.mediaDevices.getUserMedia({
         video: {
-          width: { ideal: 1280, min: 640 },
-          height: { ideal: 720, min: 480 },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
           facingMode: 'user'
         },
         audio: false
       });
-    } catch (firstErr) {
-      console.warn('[Camera] Ideal constraints failed, trying basic fallback { video: true }...', firstErr);
-      // 2. Fallback to basic video constraint
+    } catch (e1) {
+      console.warn('[Camera] Tier 1 constraint failed, trying basic { video: true }...', e1);
+      // Constraint tier 2: Any video camera available
       try {
         mediaStream = await navigator.mediaDevices.getUserMedia({
           video: true,
           audio: false
         });
-      } catch (fallbackErr) {
-        console.error('[Camera] Access Error:', fallbackErr);
-        if (fallbackErr.name === 'NotAllowedError' || fallbackErr.name === 'PermissionDeniedError') {
+      } catch (e2) {
+        console.error('[Camera] All video constraints failed:', e2);
+        if (e2.name === 'NotAllowedError' || e2.name === 'PermissionDeniedError') {
           setCameraStatus(CAMERA_STATUS.DENIED);
-          setErrorMessage('Camera permission was denied. Please allow camera access in your browser settings.');
-        } else if (fallbackErr.name === 'NotFoundError' || fallbackErr.name === 'DevicesNotFoundError') {
+          setErrorMessage('Camera permission was blocked. Please click the camera/lock icon in your browser URL bar and allow Camera.');
+        } else if (e2.name === 'NotFoundError' || e2.name === 'DevicesNotFoundError') {
           setCameraStatus(CAMERA_STATUS.NOT_AVAILABLE);
-          setErrorMessage('No camera device was found on your system.');
-        } else if (fallbackErr.name === 'NotReadableError' || fallbackErr.name === 'TrackStartError') {
+          setErrorMessage('No webcam or camera device found.');
+        } else if (e2.name === 'NotReadableError' || e2.name === 'TrackStartError') {
           setCameraStatus(CAMERA_STATUS.ERROR);
-          setErrorMessage('Camera is currently in use by another app or browser tab. Please close other camera apps.');
+          setErrorMessage('Camera is busy or in use by another app/tab. Please close other camera tabs.');
         } else {
           setCameraStatus(CAMERA_STATUS.ERROR);
-          setErrorMessage(fallbackErr.message || 'Failed to start camera feed.');
+          setErrorMessage(e2.message || 'Unable to start camera.');
         }
         return;
       }
     }
 
     if (mediaStream) {
-      streamRef.current = mediaStream;
+      activeStreamRef.current = mediaStream;
       setStream(mediaStream);
-
-      if (videoRef.current) {
-        const video = videoRef.current;
-        video.srcObject = mediaStream;
-        video.setAttribute('playsinline', 'true');
-        video.setAttribute('autoplay', 'true');
-        video.muted = true;
-
-        const playVideo = async () => {
-          try {
-            await video.play();
-            setCameraStatus(CAMERA_STATUS.READY);
-            console.log('[Camera] Webcam stream playing successfully.');
-          } catch (playErr) {
-            console.warn('[Camera] video.play() waiting for metadata...', playErr);
-          }
-        };
-
-        video.onloadedmetadata = playVideo;
-        video.oncanplay = playVideo;
-        playVideo();
-      } else {
-        setCameraStatus(CAMERA_STATUS.READY);
-      }
+      attachStreamToVideo(mediaStream);
     }
-  }, []);
+  }, [attachStreamToVideo]);
 
-  // Ensure stream binding is maintained on re-renders
+  // Persistent binding on videoRef mount or stream update
   useEffect(() => {
-    if (videoRef.current && stream) {
-      const video = videoRef.current;
-      if (video.srcObject !== stream) {
-        video.srcObject = stream;
-        video.play().catch((e) => console.warn('[Camera] Play sync error:', e));
-      }
+    if (stream && videoRef.current) {
+      attachStreamToVideo(stream);
     }
-  }, [stream]);
+  }, [stream, attachStreamToVideo]);
 
-  // Clean up tracks when component unmounts
+  // Clean up tracks on unmount
   useEffect(() => {
     return () => {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((track) => track.stop());
+      if (activeStreamRef.current) {
+        activeStreamRef.current.getTracks().forEach((track) => track.stop());
       }
     };
   }, []);

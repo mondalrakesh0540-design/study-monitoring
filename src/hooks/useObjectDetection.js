@@ -1,5 +1,5 @@
 // src/hooks/useObjectDetection.js
-// Custom React hook using MediaPipe ObjectDetector to detect any item held in front of the camera and announce it.
+// MediaPipe ObjectDetector hook with safe CPU execution to prevent WebGL/GPU conflicts with FaceLandmarker.
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { ObjectDetector, FilesetResolver } from '@mediapipe/tasks-vision';
@@ -56,7 +56,7 @@ export function useObjectDetection({ videoRef, isCameraReady, isMonitoring, onPh
   const lastAnnouncedItemRef = useRef('');
   const lastAnnounceTimeRef = useRef(0);
 
-  // Initialize MediaPipe Object Detector
+  // Initialize MediaPipe Object Detector with robust CPU delegate
   useEffect(() => {
     let isSubscribed = true;
 
@@ -72,10 +72,10 @@ export function useObjectDetection({ videoRef, isCameraReady, isMonitoring, onPh
           baseOptions: {
             modelAssetPath:
               'https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite0/float16/1/efficientdet_lite0.tflite',
-            delegate: 'GPU'
+            delegate: 'CPU'
           },
-          scoreThreshold: 0.35,
-          maxResults: 4,
+          scoreThreshold: 0.38,
+          maxResults: 3,
           runningMode: 'VIDEO'
         });
 
@@ -86,38 +86,10 @@ export function useObjectDetection({ videoRef, isCameraReady, isMonitoring, onPh
 
         detectorRef.current = detector;
         setObjectDetectorReady(true);
-        console.log('[ObjectDetector] MediaPipe Object Detector initialized with GPU.');
+        console.log('[ObjectDetector] Object Detector initialized with reliable CPU mode.');
       } catch (err) {
-        console.warn('[ObjectDetector] GPU init failed, trying CPU fallback...', err);
-        try {
-          const vision = await FilesetResolver.forVisionTasks(
-            'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm'
-          );
-          if (!isSubscribed) return;
-
-          const detector = await ObjectDetector.createFromOptions(vision, {
-            baseOptions: {
-              modelAssetPath:
-                'https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite0/float16/1/efficientdet_lite0.tflite',
-              delegate: 'CPU'
-            },
-            scoreThreshold: 0.35,
-            maxResults: 4,
-            runningMode: 'VIDEO'
-          });
-
-          if (!isSubscribed) {
-            detector.close();
-            return;
-          }
-
-          detectorRef.current = detector;
-          setObjectDetectorReady(true);
-          console.log('[ObjectDetector] Object Detector initialized with CPU fallback.');
-        } catch (cpuErr) {
-          console.error('[ObjectDetector] Initialization failed:', cpuErr);
-          if (isSubscribed) setObjectDetectorReady(false);
-        }
+        console.warn('[ObjectDetector] Model init error (non-fatal):', err);
+        if (isSubscribed) setObjectDetectorReady(false);
       }
     }
 
@@ -144,17 +116,17 @@ export function useObjectDetection({ videoRef, isCameraReady, isMonitoring, onPh
     }
 
     const video = videoRef.current;
-    if (video.readyState < 2 || video.videoWidth === 0 || video.videoHeight === 0) {
+    if (video.readyState < 2 || video.videoWidth === 0 || video.videoHeight === 0 || video.paused) {
       animFrameIdRef.current = requestAnimationFrame(detectObjects);
       return;
     }
 
     const now = performance.now();
-    if (now - lastDetectTimeRef.current >= 200) {
+    if (now - lastDetectTimeRef.current >= 300) {
       lastDetectTimeRef.current = now;
 
       const nowMs = Math.round(now);
-      const timestampMs = Math.max(nowMs, lastTimestampMsRef.current + 1);
+      const timestampMs = Math.max(nowMs, lastTimestampMsRef.current + 2);
       lastTimestampMsRef.current = timestampMs;
 
       try {
@@ -167,7 +139,7 @@ export function useObjectDetection({ videoRef, isCameraReady, isMonitoring, onPh
           if (!cat) continue;
 
           const label = cat.categoryName?.toLowerCase() || '';
-          if (label === 'person') continue; // We track person via FaceLandmarker
+          if (label === 'person') continue; // Handled by FaceLandmarker
 
           const bbox = det.boundingBox;
           if (!bbox) continue;
@@ -176,7 +148,7 @@ export function useObjectDetection({ videoRef, isCameraReady, isMonitoring, onPh
           const scorePercent = Math.round((cat.score || 0) * 100);
 
           items.push({
-            id: label + '-' + bbox.originX,
+            id: label + '-' + Math.round(bbox.originX),
             label,
             displayName: label.charAt(0).toUpperCase() + label.slice(1),
             emoji,
@@ -194,12 +166,12 @@ export function useObjectDetection({ videoRef, isCameraReady, isMonitoring, onPh
 
         setDetectedObjects(items);
 
-        // Announce prominent detected item
+        // Announce detected items with debounce
         if (items.length > 0) {
           const topItem = items[0];
           const timeSinceLastAnnounce = Date.now() - lastAnnounceTimeRef.current;
 
-          if (topItem.label !== lastAnnouncedItemRef.current || timeSinceLastAnnounce > 6000) {
+          if (topItem.label !== lastAnnouncedItemRef.current || timeSinceLastAnnounce > 7000) {
             lastAnnouncedItemRef.current = topItem.label;
             lastAnnounceTimeRef.current = Date.now();
 
@@ -213,7 +185,7 @@ export function useObjectDetection({ videoRef, isCameraReady, isMonitoring, onPh
           }
         }
       } catch (err) {
-        console.warn('[ObjectDetector] Detection loop error:', err);
+        // Non-blocking error handling
       }
     }
 
