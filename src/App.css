@@ -953,10 +953,25 @@ body {
 }
 
 .tab-btn.active {
-  background: rgba(168, 85, 247, 0.2);
-  border-color: rgba(168, 85, 247, 0.4);
+  background: rgba(168, 85, 247, 0.25);
+  border-color: rgba(168, 85, 247, 0.5);
   color: #f8fafc;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.2);
+}
+
+.tab-fade-in {
+  animation: fadeInTab 0.25s ease-out;
+}
+
+.tab-single-container {
+  max-width: 900px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+@keyframes fadeInTab {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .tab-badge {

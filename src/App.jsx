@@ -1,5 +1,9 @@
 // src/App.jsx
-// FocusGuard AI - 18+ Spicy Hindi Meme, Facial Expression, AI Object Scanner & Study Guide Monitor
+// FocusGuard AI - Modular Tab-Based Architecture:
+// 1. 📊 Live Study Monitor
+// 2. 📦 AI Item & Object Scanner
+// 3. 📚 AI Study Guide & Rules
+// 4. 🔥 18+ Spicy Meme Soundboard
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useCamera } from './hooks/useCamera';
@@ -371,14 +375,14 @@ export default function App() {
         </div>
       </header>
 
-      {/* Responsive Mobile / Desktop Navigation Tab Bar */}
+      {/* Prominent Tab Navigation Bar */}
       <nav className="app-tab-nav">
         <button
           className={`tab-btn ${activeTab === 'dashboard' ? 'active' : ''}`}
           onClick={() => setActiveTab('dashboard')}
         >
           <LayoutDashboard size={18} />
-          <span>Live Dashboard</span>
+          <span>📹 Study Monitor</span>
         </button>
 
         <button
@@ -386,7 +390,7 @@ export default function App() {
           onClick={() => setActiveTab('scanner')}
         >
           <Box size={18} />
-          <span>Item Scanner</span>
+          <span>📦 Item Scanner</span>
           {detectedObjects.length > 0 && <span className="tab-badge">{detectedObjects.length}</span>}
         </button>
 
@@ -395,7 +399,7 @@ export default function App() {
           onClick={() => setActiveTab('guide')}
         >
           <BookOpen size={18} />
-          <span>Study Guide</span>
+          <span>📚 Study Guide</span>
         </button>
 
         <button
@@ -403,105 +407,115 @@ export default function App() {
           onClick={() => setActiveTab('memes')}
         >
           <Flame size={18} />
-          <span>18+ Memes</span>
+          <span>🔞 18+ Memes</span>
         </button>
       </nav>
 
-      {/* Main Responsive Grid Layout */}
-      <main className="dashboard-grid">
-        {/* Left Column: Camera Preview & Study Controls */}
-        <section className={`dashboard-col left-col ${activeTab !== 'dashboard' ? 'mobile-hidden' : ''}`}>
-          <CameraMonitor
-            videoRef={videoRef}
-            cameraStatus={cameraStatus}
-            errorMessage={cameraError || modelError}
-            startCamera={handleStartCamera}
-            stopCamera={stopCamera}
-            isMonitoring={isMonitoring}
-            faceBoundingBox={faceBoundingBox}
-            expressionMood={expressionMood}
-            detectedObjects={detectedObjects}
-            latestItemAnnouncement={latestItemAnnouncement}
-          />
+      {/* Main Content Rendered strictly according to selected tab */}
+      <main className="dashboard-main-content">
+        {/* TAB 1: LIVE STUDY MONITOR & CAMERA */}
+        {activeTab === 'dashboard' && (
+          <div className="dashboard-grid tab-fade-in">
+            <section className="dashboard-col left-col">
+              <CameraMonitor
+                videoRef={videoRef}
+                cameraStatus={cameraStatus}
+                errorMessage={cameraError || modelError}
+                startCamera={handleStartCamera}
+                stopCamera={stopCamera}
+                isMonitoring={isMonitoring}
+                faceBoundingBox={faceBoundingBox}
+                expressionMood={expressionMood}
+                detectedObjects={[]}
+                latestItemAnnouncement=""
+              />
 
-          <StudyControls
-            isCameraReady={isCameraReady}
-            isMonitoring={isMonitoring}
-            startStudy={startStudy}
-            stopStudy={stopStudy}
-            resetSession={resetSession}
-          />
+              <StudyControls
+                isCameraReady={isCameraReady}
+                isMonitoring={isMonitoring}
+                startStudy={startStudy}
+                stopStudy={stopStudy}
+                resetSession={resetSession}
+              />
+            </section>
 
-          {/* AI Item Scanner Card (Desktop always visible, mobile switches on tab) */}
-          <ItemDetectorPanel
-            detectedObjects={detectedObjects}
-            latestItemAnnouncement={latestItemAnnouncement}
-            objectDetectorReady={objectDetectorReady}
-            isCameraReady={isCameraReady}
-          />
-        </section>
+            <section className="dashboard-col right-col">
+              <StatusPanel
+                sessionStatus={sessionStatus}
+                funnyMessage={funnyMessage}
+                volume={volume}
+                isMuted={isMuted}
+                onVolumeChange={handleVolumeChange}
+                onMuteToggle={handleMuteToggle}
+                expressionMood={expressionMood}
+                debugInfo={{
+                  isFaceDetected,
+                  missingDuration,
+                  distractedDuration,
+                  cameraStatus,
+                  isMonitoring,
+                  detectorReady: faceDetectorReady
+                }}
+              />
 
-        {/* Right Column: Status Banner, Timers, History, Study Guide & Meme Soundboard */}
-        <section className={`dashboard-col right-col ${activeTab !== 'dashboard' ? 'mobile-hidden' : ''}`}>
-          <StatusPanel
-            sessionStatus={sessionStatus}
-            funnyMessage={funnyMessage}
-            volume={volume}
-            isMuted={isMuted}
-            onVolumeChange={handleVolumeChange}
-            onMuteToggle={handleMuteToggle}
-            expressionMood={expressionMood}
-            debugInfo={{
-              isFaceDetected,
-              missingDuration,
-              distractedDuration,
-              cameraStatus,
-              isMonitoring,
-              detectorReady: faceDetectorReady && objectDetectorReady
-            }}
-          />
+              <SessionTimer
+                totalTime={totalTime}
+                focusedTime={focusedTime}
+                distractedTime={distractedTime}
+              />
 
-          <SessionTimer
-            totalTime={totalTime}
-            focusedTime={focusedTime}
-            distractedTime={distractedTime}
-          />
+              <AlertHistory events={events} />
+            </section>
+          </div>
+        )}
 
-          <StudyGuidePanel />
-
-          <MemeSoundboard onTriggerMeme={(msg) => setFunnyMessageWithTimeout(msg)} />
-
-          <AlertHistory events={events} />
-        </section>
-
-        {/* Mobile Tab Dedicated Views (when user clicks dedicated tabs on phone) */}
+        {/* TAB 2: DEDICATED AI ITEM & OBJECT SCANNER */}
         {activeTab === 'scanner' && (
-          <section className="dashboard-col full-col mobile-only-view">
-            <ItemDetectorPanel
-              detectedObjects={detectedObjects}
-              latestItemAnnouncement={latestItemAnnouncement}
-              objectDetectorReady={objectDetectorReady}
-              isCameraReady={isCameraReady}
-            />
-          </section>
+          <div className="dashboard-grid tab-fade-in">
+            <section className="dashboard-col left-col">
+              <CameraMonitor
+                videoRef={videoRef}
+                cameraStatus={cameraStatus}
+                errorMessage={cameraError || modelError}
+                startCamera={handleStartCamera}
+                stopCamera={stopCamera}
+                isMonitoring={isMonitoring}
+                faceBoundingBox={null}
+                expressionMood="Object Scanner Active"
+                detectedObjects={detectedObjects}
+                latestItemAnnouncement={latestItemAnnouncement}
+              />
+            </section>
+
+            <section className="dashboard-col right-col">
+              <ItemDetectorPanel
+                detectedObjects={detectedObjects}
+                latestItemAnnouncement={latestItemAnnouncement}
+                objectDetectorReady={objectDetectorReady}
+                isCameraReady={isCameraReady}
+              />
+            </section>
+          </div>
         )}
 
+        {/* TAB 3: DEDICATED STUDY GUIDE & RULES */}
         {activeTab === 'guide' && (
-          <section className="dashboard-col full-col mobile-only-view">
+          <div className="tab-single-container tab-fade-in">
             <StudyGuidePanel />
-          </section>
+          </div>
         )}
 
+        {/* TAB 4: DEDICATED 18+ SPICY HINDI MEME SOUNDBOARD */}
         {activeTab === 'memes' && (
-          <section className="dashboard-col full-col mobile-only-view">
+          <div className="tab-single-container tab-fade-in">
             <MemeSoundboard onTriggerMeme={(msg) => setFunnyMessageWithTimeout(msg)} />
-          </section>
+          </div>
         )}
       </main>
 
       {/* Footer & Credits */}
       <footer className="app-footer">
-        <p>FocusGuard AI • 100% Local Browser AI • Object Recognition, Study Guide & 18+ Memes • Privacy First</p>
+        <p>FocusGuard AI • 100% Local Browser AI • Separate Dedicated Sections • Privacy First</p>
         <p className="app-credits">
           Developed by <strong>Rakesh</strong> and Collaborated with <strong>Ani (main developer)</strong> <Heart size={14} className="heart-icon" />
         </p>
