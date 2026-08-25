@@ -1,8 +1,8 @@
 // src/components/CameraMonitor.jsx
-// Live webcam monitor with dynamic AI mood bounding box, detected object bounding boxes, and camera controls.
+// Live webcam monitor with dynamic AI mood bounding box and camera controls.
 
 import React from 'react';
-import { Camera, CameraOff, Video, AlertTriangle, Box } from 'lucide-react';
+import { Camera, CameraOff, Video, AlertTriangle } from 'lucide-react';
 import { CAMERA_STATUS } from '../hooks/useCamera';
 
 export function CameraMonitor({
@@ -13,9 +13,7 @@ export function CameraMonitor({
   stopCamera,
   isMonitoring,
   faceBoundingBox,
-  expressionMood = 'Focused 🎯',
-  detectedObjects = [],
-  latestItemAnnouncement = ''
+  expressionMood = 'Focused 🎯'
 }) {
   const renderBadge = () => {
     switch (cameraStatus) {
@@ -34,7 +32,6 @@ export function CameraMonitor({
     }
   };
 
-  // Face bounding box
   const renderFaceBoundingBox = () => {
     if (!isMonitoring || !faceBoundingBox || cameraStatus !== CAMERA_STATUS.READY) {
       return null;
@@ -76,45 +73,6 @@ export function CameraMonitor({
     );
   };
 
-  // Detected Objects / Items bounding boxes
-  const renderObjectBoundingBoxes = () => {
-    if (cameraStatus !== CAMERA_STATUS.READY || detectedObjects.length === 0) {
-      return null;
-    }
-
-    return detectedObjects.map((obj, idx) => {
-      const { originX, originY, width, height, videoWidth, videoHeight } = obj.boundingBox;
-      if (!videoWidth || !videoHeight) return null;
-
-      const leftPercent = ((videoWidth - originX - width) / videoWidth) * 100;
-      const topPercent = (originY / videoHeight) * 100;
-      const widthPercent = (width / videoWidth) * 100;
-      const heightPercent = (height / videoHeight) * 100;
-
-      const isDistraction = obj.label === 'cell phone';
-      const itemColor = isDistraction ? '#f43f5e' : '#06b6d4';
-
-      return (
-        <div
-          key={obj.id || idx}
-          className="object-bbox"
-          style={{
-            left: `${leftPercent}%`,
-            top: `${topPercent}%`,
-            width: `${widthPercent}%`,
-            height: `${heightPercent}%`,
-            borderColor: itemColor,
-            boxShadow: `0 0 14px ${itemColor}`
-          }}
-        >
-          <span className="object-bbox-label" style={{ backgroundColor: itemColor }}>
-            {obj.emoji} {obj.displayName} ({obj.score}%)
-          </span>
-        </div>
-      );
-    });
-  };
-
   return (
     <div className="card camera-card">
       <div className="card-header">
@@ -134,14 +92,6 @@ export function CameraMonitor({
           className={`webcam-video ${cameraStatus === CAMERA_STATUS.READY ? 'active' : 'inactive'}`}
         />
 
-        {/* Live Detected Item Voice Banner */}
-        {latestItemAnnouncement && cameraStatus === CAMERA_STATUS.READY && (
-          <div className="item-announcement-chip">
-            <Box size={14} />
-            <span>{latestItemAnnouncement}</span>
-          </div>
-        )}
-
         {cameraStatus !== CAMERA_STATUS.READY && (
           <div className="video-placeholder">
             <CameraOff size={48} className="placeholder-icon" />
@@ -154,7 +104,6 @@ export function CameraMonitor({
         )}
 
         {renderFaceBoundingBox()}
-        {renderObjectBoundingBoxes()}
       </div>
 
       {errorMessage && (

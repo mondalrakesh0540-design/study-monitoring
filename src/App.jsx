@@ -1,14 +1,9 @@
 // src/App.jsx
-// FocusGuard AI - Modular Tab-Based Architecture:
-// 1. 📊 Live Study Monitor
-// 2. 📦 AI Item & Object Scanner
-// 3. 📚 AI Study Guide & Rules
-// 4. 🔥 18+ Spicy Meme Soundboard
+// FocusGuard AI - 18+ Spicy Hindi Meme, Facial Expression & Master Study Guide AI Monitor
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useCamera } from './hooks/useCamera';
 import { useFaceDetection } from './hooks/useFaceDetection';
-import { useObjectDetection } from './hooks/useObjectDetection';
 import { useVisibilityMonitor } from './hooks/useVisibilityMonitor';
 import { audioManager } from './utils/audioManager';
 
@@ -18,10 +13,9 @@ import { StatusPanel } from './components/StatusPanel';
 import { SessionTimer } from './components/SessionTimer';
 import { AlertHistory } from './components/AlertHistory';
 import { MemeSoundboard } from './components/MemeSoundboard';
-import { ItemDetectorPanel } from './components/ItemDetectorPanel';
 import { StudyGuidePanel } from './components/StudyGuidePanel';
 
-import { ShieldCheck, Heart, LayoutDashboard, Box, BookOpen, Flame } from 'lucide-react';
+import { ShieldCheck, Heart, LayoutDashboard, BookOpen, Flame } from 'lucide-react';
 import './App.css';
 
 export default function App() {
@@ -30,7 +24,7 @@ export default function App() {
   const [funnyMessage, setFunnyMessage] = useState('');
   const [volume, setVolumeState] = useState(0.85);
   const [isMuted, setIsMutedState] = useState(false);
-  const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard' | 'scanner' | 'guide' | 'memes'
+  const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard' | 'guide' | 'memes'
 
   // Timers State
   const [totalTime, setTotalTime] = useState(0);
@@ -97,27 +91,6 @@ export default function App() {
     expressionMood
   } = useFaceDetection({ videoRef, isCameraReady, isMonitoring });
 
-  // Object / Item Detection Hook (Phone, Book, Bottle, Cup, etc. with Voice Announcement)
-  const handlePhoneDetected = useCallback(() => {
-    if (isMonitoring) {
-      setSessionStatus('Distracted');
-      setFunnyMessageWithTimeout('Phone Detected! Chal Bhosdike phone hata aur padhai kar!');
-      audioManager.playAudio('chal-bsdk-meme', false);
-      addEvent('phone-detected', '📱 Phone Detected', 'Phone spotted in front of camera!');
-    }
-  }, [isMonitoring, addEvent, setFunnyMessageWithTimeout]);
-
-  const {
-    objectDetectorReady,
-    detectedObjects,
-    latestItemAnnouncement
-  } = useObjectDetection({
-    videoRef,
-    isCameraReady,
-    isMonitoring,
-    onPhoneDetected: handlePhoneDetected
-  });
-
   // Audio Controls
   const handleVolumeChange = (newVol) => {
     setVolumeState(newVol);
@@ -154,7 +127,7 @@ export default function App() {
     const msg = audioManager.getFunnyMessage('start-study');
     setFunnyMessageWithTimeout(msg);
     audioManager.playAudio('start-study', true);
-    addEvent('start-study', 'Modi Ji: Study Started', 'Monitoring initiated with 18+ meme pack & object detector.');
+    addEvent('start-study', 'Modi Ji: Study Started', 'Monitoring initiated with 18+ meme pack.');
   };
 
   // Stop Study Session
@@ -369,13 +342,13 @@ export default function App() {
           <div>
             <h1 className="app-title">FocusGuard AI</h1>
             <p className="app-subtitle">
-              Face Expression, AI Item Recognition & 18+ Hindi Meme Study Monitor
+              Face Expression AI Study Monitor & 18+ Hindi Meme Soundboard
             </p>
           </div>
         </div>
       </header>
 
-      {/* Prominent Tab Navigation Bar */}
+      {/* Prominent 3-Section Tab Navigation Bar */}
       <nav className="app-tab-nav">
         <button
           className={`tab-btn ${activeTab === 'dashboard' ? 'active' : ''}`}
@@ -383,15 +356,6 @@ export default function App() {
         >
           <LayoutDashboard size={18} />
           <span>📹 Study Monitor</span>
-        </button>
-
-        <button
-          className={`tab-btn ${activeTab === 'scanner' ? 'active' : ''}`}
-          onClick={() => setActiveTab('scanner')}
-        >
-          <Box size={18} />
-          <span>📦 Item Scanner</span>
-          {detectedObjects.length > 0 && <span className="tab-badge">{detectedObjects.length}</span>}
         </button>
 
         <button
@@ -426,8 +390,6 @@ export default function App() {
                 isMonitoring={isMonitoring}
                 faceBoundingBox={faceBoundingBox}
                 expressionMood={expressionMood}
-                detectedObjects={[]}
-                latestItemAnnouncement=""
               />
 
               <StudyControls
@@ -469,43 +431,14 @@ export default function App() {
           </div>
         )}
 
-        {/* TAB 2: DEDICATED AI ITEM & OBJECT SCANNER */}
-        {activeTab === 'scanner' && (
-          <div className="dashboard-grid tab-fade-in">
-            <section className="dashboard-col left-col">
-              <CameraMonitor
-                videoRef={videoRef}
-                cameraStatus={cameraStatus}
-                errorMessage={cameraError || modelError}
-                startCamera={handleStartCamera}
-                stopCamera={stopCamera}
-                isMonitoring={isMonitoring}
-                faceBoundingBox={null}
-                expressionMood="Object Scanner Active"
-                detectedObjects={detectedObjects}
-                latestItemAnnouncement={latestItemAnnouncement}
-              />
-            </section>
-
-            <section className="dashboard-col right-col">
-              <ItemDetectorPanel
-                detectedObjects={detectedObjects}
-                latestItemAnnouncement={latestItemAnnouncement}
-                objectDetectorReady={objectDetectorReady}
-                isCameraReady={isCameraReady}
-              />
-            </section>
-          </div>
-        )}
-
-        {/* TAB 3: DEDICATED STUDY GUIDE & RULES */}
+        {/* TAB 2: MASTER STUDY GUIDE & RULES */}
         {activeTab === 'guide' && (
           <div className="tab-single-container tab-fade-in">
             <StudyGuidePanel />
           </div>
         )}
 
-        {/* TAB 4: DEDICATED 18+ SPICY HINDI MEME SOUNDBOARD */}
+        {/* TAB 3: 18+ SPICY HINDI MEME SOUNDBOARD */}
         {activeTab === 'memes' && (
           <div className="tab-single-container tab-fade-in">
             <MemeSoundboard onTriggerMeme={(msg) => setFunnyMessageWithTimeout(msg)} />
@@ -515,7 +448,7 @@ export default function App() {
 
       {/* Footer & Credits */}
       <footer className="app-footer">
-        <p>FocusGuard AI • 100% Local Browser AI • Separate Dedicated Sections • Privacy First</p>
+        <p>FocusGuard AI • 100% Local Browser AI • Master Study Guide & 18+ Hindi Memes • Privacy First</p>
         <p className="app-credits">
           Developed by <strong>Rakesh</strong> and Collaborated with <strong>Ani (main developer)</strong> <Heart size={14} className="heart-icon" />
         </p>
