@@ -1,8 +1,8 @@
 // src/components/MemeSoundboard.jsx
-// Complete 18+ Spicy & Iconic Hindi Meme Soundboard with Category Filters
+// Mobile-Optimized 18+ Spicy & Iconic Hindi Meme Soundboard
 
 import React, { useState } from 'react';
-import { Sparkles, PlayCircle, Flame, Filter, Volume2 } from 'lucide-react';
+import { PlayCircle, Flame, Volume2 } from 'lucide-react';
 import { audioManager } from '../utils/audioManager';
 
 const SOUNDBOARD_MEMES = [
@@ -50,58 +50,65 @@ export function MemeSoundboard({ onTriggerMeme }) {
 
   return (
     <div className="card meme-soundboard-card">
+      {/* Soundboard Header */}
       <div className="card-header">
         <div className="header-title">
           <Flame className="icon text-red" size={24} />
           <div>
             <h3>🔥 18+ Spicy Hindi Meme Soundboard</h3>
-            <p className="subtitle-sm">20 Instant Viral Roast & Motivation Audio Clips</p>
+            <p className="subtitle-sm">20 Instant Viral Hindi Roasts & Dialogue Clips</p>
           </div>
         </div>
-        <span className="badge-live-memes">20 Meme Sounds</span>
+        <span className="badge-live-memes">{filteredMemes.length} Sounds</span>
       </div>
 
-      {/* Category Filter Pills */}
-      <div className="soundboard-filters">
-        <button
-          className={`filter-pill ${filterCategory === 'all' ? 'active' : ''}`}
-          onClick={() => setFilterCategory('all')}
-        >
-          ⚡ All (20)
-        </button>
-        <button
-          className={`filter-pill ${filterCategory === '18+' ? 'active' : ''}`}
-          onClick={() => setFilterCategory('18+')}
-        >
-          🔞 18+ Roasts (8)
-        </button>
-        <button
-          className={`filter-pill ${filterCategory === 'movies' ? 'active' : ''}`}
-          onClick={() => setFilterCategory('movies')}
-        >
-          🎬 Movies & CID (5)
-        </button>
-        <button
-          className={`filter-pill ${filterCategory === 'politics' ? 'active' : ''}`}
-          onClick={() => setFilterCategory('politics')}
-        >
-          🏛️ Modi / Rahul / Momota (5)
-        </button>
-        <button
-          className={`filter-pill ${filterCategory === 'viral' ? 'active' : ''}`}
-          onClick={() => setFilterCategory('viral')}
-        >
-          🗣️ Viral Internet (2)
-        </button>
+      {/* Swipeable Category Filter Bar */}
+      <div className="soundboard-filters-wrapper">
+        <div className="soundboard-filters">
+          <button
+            className={`filter-pill ${filterCategory === 'all' ? 'active' : ''}`}
+            onClick={() => setFilterCategory('all')}
+          >
+            ⚡ All (20)
+          </button>
+          <button
+            className={`filter-pill ${filterCategory === '18+' ? 'active' : ''}`}
+            onClick={() => setFilterCategory('18+')}
+          >
+            🔞 18+ Roasts (8)
+          </button>
+          <button
+            className={`filter-pill ${filterCategory === 'movies' ? 'active' : ''}`}
+            onClick={() => setFilterCategory('movies')}
+          >
+            🎬 Movies & CID (5)
+          </button>
+          <button
+            className={`filter-pill ${filterCategory === 'politics' ? 'active' : ''}`}
+            onClick={() => setFilterCategory('politics')}
+          >
+            🏛️ Politics (5)
+          </button>
+          <button
+            className={`filter-pill ${filterCategory === 'viral' ? 'active' : ''}`}
+            onClick={() => setFilterCategory('viral')}
+          >
+            🗣️ Viral (2)
+          </button>
+        </div>
       </div>
 
-      {/* Meme Buttons Grid */}
+      {/* Responsive Meme Buttons Grid */}
       <div className="soundboard-grid">
         {filteredMemes.map((meme) => (
           <button
             key={meme.id}
             className={`soundboard-btn ${activeButton === meme.id ? 'active-pulse' : ''}`}
-            style={{ borderColor: activeButton === meme.id ? meme.color : 'rgba(255, 255, 255, 0.08)' }}
+            style={{
+              borderColor: activeButton === meme.id ? meme.color : 'rgba(255, 255, 255, 0.08)',
+              borderLeftColor: meme.color,
+              borderLeftWidth: '3px'
+            }}
             onClick={() => handlePlay(meme)}
           >
             <span className="meme-btn-emoji">{meme.emoji}</span>
