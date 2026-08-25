@@ -1,54 +1,70 @@
 // src/utils/audioManager.js
-// FocusGuard AI Alert Sound & Funny Student Meme Manager
+// FocusGuard AI Indian Meme Sound Manager
+// Featuring: Modi Ji, Rahul Gandhi, ACP Pradyuman (CID), Bhaiyaaa, Mamata Banerjee (Momota)
 
 const AUDIO_FILES = {
-  'start-study': ['/audio/start-study.mp3', '/audio/start-study.wav', 'https://www.myinstants.com/media/sounds/gta-san-andreas-ah-shit-here-we-go-again.mp3'],
-  'tab-change': ['/audio/tab-change.mp3', '/audio/tab-change.wav', 'https://www.myinstants.com/media/sounds/emotional-damage-meme.mp3'],
-  'face-missing': ['/audio/face-missing.mp3', '/audio/face-missing.wav', 'https://www.myinstants.com/media/sounds/why-are-you-running.mp3'],
-  'distracted': ['/audio/distracted.mp3', '/audio/distracted.wav', 'https://www.myinstants.com/media/sounds/snore-mimimimimimi.mp3'],
-  'back-to-study': ['/audio/back-to-study.mp3', '/audio/back-to-study.wav', 'https://www.myinstants.com/media/sounds/noice.mp3'],
-  'sleep-warning': ['/audio/sleep-warning.mp3', '/audio/sleep-warning.wav', 'https://www.myinstants.com/media/sounds/loud-alarm-clock.mp3'],
+  'start-study': [
+    '/audio/start-study.mp3',
+    '/audio/start-study.wav',
+    'https://www.myinstants.com/media/sounds/wah-modiji-wah.mp3'
+  ],
+  'tab-change': [
+    '/audio/tab-change.mp3',
+    '/audio/tab-change.wav',
+    'https://www.myinstants.com/media/sounds/rahul-gandhi-khatam-tata-good-bye.mp3'
+  ],
+  'face-missing': [
+    '/audio/face-missing.mp3',
+    '/audio/face-missing.wav',
+    'https://www.myinstants.com/media/sounds/nahi-nahi-saluke-yaha-kuchh-to-gadbad-hai.mp3'
+  ],
+  'distracted': [
+    '/audio/distracted.mp3',
+    '/audio/distracted.wav',
+    'https://www.myinstants.com/media/sounds/bhaiyaaaaa.mp3'
+  ],
+  'back-to-study': [
+    '/audio/back-to-study.mp3',
+    '/audio/back-to-study.wav',
+    'https://www.myinstants.com/media/sounds/maja-aaya.mp3'
+  ],
+  'sleep-warning': [
+    '/audio/sleep-warning.mp3',
+    '/audio/sleep-warning.wav',
+    'https://www.myinstants.com/media/sounds/khelaa-hobee.mp3'
+  ],
 };
 
 export const FUNNY_MEMES = {
   'start-study': [
+    { text: 'Modi Ji: Wah Modiji Wah! Mitron, padhai shuru karo, topper banna hai!', tag: '🇮🇳 MODI JI MOTIVATION' },
     { text: 'Study Mode ACTIVATED! No phone, no Insta, only 100% Focus!', tag: '🚀 TOPPER VIBES' },
-    { text: 'Welcome back! এবার মন দিয়ে পড়ো, পরীক্ষার আর বেশি দিন নেই!', tag: '📚 STUDY TIME' },
-    { text: 'Padhai shuru karo! IAS / Doctor / Engineer banna hai ki nahi?', tag: '🎯 GOAL ORIENTED' },
-    { text: 'Bhalo marks pele treat debo! Cholo full energy te shuru kora jak!', tag: '🔥 MOTIVATION' }
+    { text: 'Mitron! Aaj pura chapter padh ke hi sona hai!', tag: '📚 MODI MISSION' }
   ],
   'tab-change': [
-    { text: 'Tab change kore ki korcho? YouTube naki Insta Reels? Dhora pore gecho!', tag: '🚨 CAUGHT IN 4K' },
-    { text: 'Bhai padhle... Reels dekhne se marks nahi milte!', tag: '📱 NO REELS' },
-    { text: 'Hey! Alt+Tab cheat koro na, Camera shob dekhchhe!', tag: '🕵️‍♂️ SPY DETECTED' },
-    { text: 'Insta scroll kore future banano jay na! Padhai pe dhyan do!', tag: '⚠️ FOCUS WARNING' },
-    { text: 'Ekbar tab change korle exam hall-e kante hobe! Back to study!', tag: '🛑 TAB SWITCH' }
+    { text: 'Rahul Gandhi: Khatam! Tata, Bye Bye, Goodbye, Gaya! Tab switch mat karo!', tag: '🚨 KHATAM TATA BYE BYE' },
+    { text: 'Caught in 4K! YouTube naki Insta Reels? Padhai pe dhyan do!', tag: '📱 NO REELS' },
+    { text: 'Alt+Tab cheat bandh karo! Camera sab dekh raha hai!', tag: '🛑 TAB SWITCH DETECTED' }
   ],
   'face-missing': [
+    { text: 'ACP Pradyuman: Daya, yaha kuchh to gadbad hai! Bachha desk se gayab hai!', tag: '🕵️‍♂️ ACP PRADYUMAN (CID)' },
     { text: 'Oi! Porte bose kothay gele? Bhoot hoye gele naki?!', tag: '👻 GHOST MODE' },
-    { text: 'Boi diye mukh dhakle pora mathay dhoke na! Camera-te mukh rakho!', tag: '📖 FACE COVERED' },
-    { text: 'Camera tomake khuje pachche na! Kidhar gayab ho gaye?', tag: '🔍 404 NOT FOUND' },
-    { text: 'Porashona chhere bathroom break naki snacks khawa hocche? Chole asho!', tag: '🏃‍♂️ MISSING IN ACTION' },
-    { text: 'Face missing! Porte boso, phaki dewa bondho koro!', tag: '🚨 RETURN TO DESK' }
+    { text: 'Daya, pata lagao! Kithe bhaag gaya padhai chhod ke?', tag: '🔍 CID DETECTIVE' }
   ],
   'distracted': [
+    { text: 'Bhaiyaaaaa! Phone rakho, screen pe dhyan do!', tag: '🗣️ BHAIYAAAA ALERT' },
     { text: 'Halka ghum pachche? Chokhe jol diye asho! Wake up!', tag: '🥱 LIGHT SLEEP (5s)' },
-    { text: 'Phone namao! Phone dekhar jonno eita study session na!', tag: '📵 PHONE DETECTED' },
-    { text: 'Screen-e mon dao! Pashe ki dekhcho? Crush-er DP?', tag: '👀 DISTRACTED' },
-    { text: 'Chayer cup nao, chokh kholo! Focus Guard is watching!', tag: '☕ WAKE UP' },
-    { text: 'Looking sideways / tilted? Mon diye boi-er dike takao!', tag: '📐 POSTURE CHECK' }
+    { text: 'Screen-e mon dao! Pashe ki dekhcho? Crush-er DP?', tag: '👀 DISTRACTED' }
   ],
   'back-to-study': [
-    { text: 'Good student! Focus restored! Eibar puro chapter sesh koro!', tag: '🌟 100% FOCUS' },
-    { text: 'Shabash! Mon diye poro, topper hote hobe!', tag: '👏 EXCELLENT' },
-    { text: 'Great comeback! Focus locked in, keep going!', tag: '🚀 LOCKED IN' },
-    { text: 'Ebar hobe আসল পড়াশোনা! You can do this!', tag: '🏆 CHAMPION' }
+    { text: 'Rahul Gandhi: Aur yeh jo maza hai, topper banne me sabko milega!', tag: '👏 MAZA AAYA' },
+    { text: 'Modi Ji: Shabash! Great comeback! 100% Focus locked in!', tag: '🌟 SHABASH' },
+    { text: 'Good student! Focus restored! Ebar puro chapter sesh koro!', tag: '🏆 CHAMPION' }
   ],
   'sleep-warning': [
+    { text: 'Momota: Khela Hobe! Utho bhai, ghumano bondho koro!', tag: '💥 MOMOTA (KHELA HOBE)' },
     { text: 'WAKE UP! ৩০ সেকেন্ড ধরে ঘুমাচ্ছো! Kumbhakarna naki tumi?!', tag: '⏰ DEEP SLEEP (30s+)' },
-    { text: 'Alarm! Alarm! Utho bhai, ghumano bondho koro! Exam pass korte hobe!', tag: '💥 WAKE UP NOW' },
-    { text: '30 second hoye gelo, ekhono ghumaccho? Bapre ki ghum!', tag: '😴 SLEEPING BEAUTY' },
-    { text: 'Wake up right now! Porashonar somoy ghumonor certificate pabe naki?!', tag: '📢 SIREN ALARM' }
+    { text: '30 second hoye gelo, ekhono ghumaccho? Bapre ki ghum!', tag: '😴 SLEEPING BEAUTY' }
   ]
 };
 
