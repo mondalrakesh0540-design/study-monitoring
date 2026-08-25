@@ -67,12 +67,14 @@ export function StatusPanel({
         <span className="status-text">{theme.text}</span>
       </div>
 
-      {/* Funny Warning Message Area */}
+      {/* Funny Meme / Warning Alert Area */}
       {funnyMessage && (
         <div className="funny-message-box">
-          <ShieldAlert className="message-icon" size={24} />
+          <div className="meme-icon-pulse">😂</div>
           <div className="message-content">
-            <span className="message-title">Guard Warning:</span>
+            <div className="meme-header-row">
+              <span className="message-title">🔥 STUDY MEME ALERT:</span>
+            </div>
             <p className="message-body">"{funnyMessage}"</p>
           </div>
         </div>

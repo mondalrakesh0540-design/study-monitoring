@@ -1,6 +1,5 @@
 // src/utils/audioManager.js
-// FocusGuard AI Alert Sound Manager
-// Plays alert sounds (.wav/.mp3) with Web Audio API synthesis fallback and autoplay unlock.
+// FocusGuard AI Alert Sound & Funny Student Meme Manager
 
 const AUDIO_FILES = {
   'start-study': ['/audio/start-study.wav', '/audio/start-study.mp3'],
@@ -11,30 +10,45 @@ const AUDIO_FILES = {
   'sleep-warning': ['/audio/sleep-warning.wav', '/audio/sleep-warning.mp3'],
 };
 
-const FUNNY_MESSAGES = {
+export const FUNNY_MEMES = {
   'start-study': [
-    'Welcome back! এবার মন দিয়ে পড়ো।',
-    'Study session started! No distractions allowed!'
+    { text: 'Study Mode ACTIVATED! No phone, no Insta, only 100% Focus!', tag: '🚀 TOPPER VIBES' },
+    { text: 'Welcome back! এবার মন দিয়ে পড়ো, পরীক্ষার আর বেশি দিন নেই!', tag: '📚 STUDY TIME' },
+    { text: 'Padhai shuru karo! IAS / Doctor / Engineer banna hai ki nahi?', tag: '🎯 GOAL ORIENTED' },
+    { text: 'Bhalo marks pele treat debo! Cholo full energy te shuru kora jak!', tag: '🔥 MOTIVATION' }
   ],
   'tab-change': [
-    'Tab change kore ki korcho?',
-    'Hey! YouTube naki Insta? Tab change bondho koro!'
+    { text: 'Tab change kore ki korcho? YouTube naki Insta Reels? Dhora pore gecho!', tag: '🚨 CAUGHT IN 4K' },
+    { text: 'Bhai padhle... Reels dekhne se marks nahi milte!', tag: '📱 NO REELS' },
+    { text: 'Hey! Alt+Tab cheat koro na, Camera shob dekhchhe!', tag: '🕵️‍♂️ SPY DETECTED' },
+    { text: 'Insta scroll kore future banano jay na! Padhai pe dhyan do!', tag: '⚠️ FOCUS WARNING' },
+    { text: 'Ekbar tab change korle exam hall-e kante hobe! Back to study!', tag: '🛑 TAB SWITCH' }
   ],
   'face-missing': [
-    'Oi! Porte bose kothay gele? Face cover/missing!',
-    'Camera tomake khuje pachche na! Wake up!'
+    { text: 'Oi! Porte bose kothay gele? Bhoot hoye gele naki?!', tag: '👻 GHOST MODE' },
+    { text: 'Boi diye mukh dhakle pora mathay dhoke na! Camera-te mukh rakho!', tag: '📖 FACE COVERED' },
+    { text: 'Camera tomake khuje pachche na! Kidhar gayab ho gaye?', tag: '🔍 404 NOT FOUND' },
+    { text: 'Porashona chhere bathroom break naki snacks khawa hocche? Chole asho!', tag: '🏃‍♂️ MISSING IN ACTION' },
+    { text: 'Face missing! Porte boso, phaki dewa bondho koro!', tag: '🚨 RETURN TO DESK' }
   ],
   'distracted': [
-    'Phone namao, porashonar mon dao!',
-    'Do not look away or sleep! Screen-e mon dao!'
+    { text: 'Halka ghum pachche? Chokhe jol diye asho! Wake up!', tag: '🥱 LIGHT SLEEP (5s)' },
+    { text: 'Phone namao! Phone dekhar jonno eita study session na!', tag: '📵 PHONE DETECTED' },
+    { text: 'Screen-e mon dao! Pashe ki dekhcho? Crush-er DP?', tag: '👀 DISTRACTED' },
+    { text: 'Chayer cup nao, chokh kholo! Focus Guard is watching!', tag: '☕ WAKE UP' },
+    { text: 'Looking sideways / tilted? Mon diye boi-er dike takao!', tag: '📐 POSTURE CHECK' }
   ],
   'back-to-study': [
-    'Welcome back! Ekhon mon diye poro.',
-    'Good student! Focus restored.'
+    { text: 'Good student! Focus restored! Eibar puro chapter sesh koro!', tag: '🌟 100% FOCUS' },
+    { text: 'Shabash! Mon diye poro, topper hote hobe!', tag: '👏 EXCELLENT' },
+    { text: 'Great comeback! Focus locked in, keep going!', tag: '🚀 LOCKED IN' },
+    { text: 'Ebar hobe আসল পড়াশোনা! You can do this!', tag: '🏆 CHAMPION' }
   ],
   'sleep-warning': [
-    'Wake up! You have been sleeping for more than 30 seconds!',
-    'Oi! 30 second hoye gelo, ekhono ghumaccho? Utho!'
+    { text: 'WAKE UP! ৩০ সেকেন্ড ধরে ঘুমাচ্ছো! Kumbhakarna naki tumi?!', tag: '⏰ DEEP SLEEP (30s+)' },
+    { text: 'Alarm! Alarm! Utho bhai, ghumano bondho koro! Exam pass korte hobe!', tag: '💥 WAKE UP NOW' },
+    { text: '30 second hoye gelo, ekhono ghumaccho? Bapre ki ghum!', tag: '😴 SLEEPING BEAUTY' },
+    { text: 'Wake up right now! Porashonar somoy ghumonor certificate pabe naki?!', tag: '📢 SIREN ALARM' }
   ]
 };
 
@@ -49,7 +63,6 @@ class AudioManager {
   }
 
   // Called on user gesture (Start Camera / Start Study click)
-  // Unlocks browser audio autoplay policy
   async unlockAudioContext() {
     try {
       if (!this.audioContext) {
@@ -87,7 +100,13 @@ class AudioManager {
   }
 
   getFunnyMessage(eventType) {
-    const list = FUNNY_MESSAGES[eventType] || ['FocusGuard is watching you!'];
+    const list = FUNNY_MEMES[eventType] || [{ text: 'FocusGuard AI is watching you! Padhai karo!', tag: '🤖 GUARD' }];
+    const randomIndex = Math.floor(Math.random() * list.length);
+    return list[randomIndex].text;
+  }
+
+  getFunnyMemeObject(eventType) {
+    const list = FUNNY_MEMES[eventType] || [{ text: 'FocusGuard AI is watching you! Padhai karo!', tag: '🤖 GUARD' }];
     const randomIndex = Math.floor(Math.random() * list.length);
     return list[randomIndex];
   }
