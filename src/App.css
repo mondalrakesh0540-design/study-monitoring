@@ -700,3 +700,151 @@ body {
   color: #ef4444;
   vertical-align: middle;
 }
+
+/* Indicators Row (Mood & Noise) */
+.indicators-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.indicator-pill {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid var(--bg-card-border);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+}
+
+.indicator-icon {
+  color: #c084fc;
+}
+
+.indicator-label {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.indicator-val {
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.noise-pill {
+  position: relative;
+  overflow: hidden;
+}
+
+.noise-alert-pill {
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.mini-noise-bar {
+  flex: 1;
+  height: 6px;
+  background: #334155;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-left: 4px;
+}
+
+.mini-noise-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #22c55e, #eab308, #ef4444);
+  transition: width 0.15s ease-out;
+}
+
+/* Meme Soundboard Card */
+.meme-soundboard-card {
+  margin-top: 20px;
+}
+
+.badge-live-memes {
+  background: rgba(234, 179, 8, 0.15);
+  color: #facc15;
+  border: 1px solid rgba(234, 179, 8, 0.3);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 12px;
+}
+
+.soundboard-subtitle {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin: -6px 0 14px 0;
+}
+
+.soundboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 10px;
+}
+
+.soundboard-btn {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1.5px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease;
+}
+
+.soundboard-btn:hover {
+  background: rgba(30, 41, 59, 0.9);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.soundboard-btn.active-pulse {
+  transform: scale(0.97);
+  box-shadow: 0 0 15px currentColor;
+}
+
+.meme-btn-emoji {
+  font-size: 1.4rem;
+  flex-shrink: 0;
+}
+
+.meme-btn-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.meme-btn-title {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.meme-btn-quote {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.meme-btn-play-icon {
+  color: var(--text-muted);
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+.soundboard-btn:hover .meme-btn-play-icon {
+  color: #fff;
+  opacity: 1;
+}

@@ -1,8 +1,9 @@
 // src/hooks/useFaceDetection.js
-// Advanced MediaPipe FaceLandmarker + FaceDetector hook for accurate:
-// 1. Face Presence / Missing Detection (covered by book / left seat)
-// 2. Real Eye-Closure Sleep Detection (EAR + Blendshapes) for 5s light sleep & 30s deep sleep
-// 3. Posture & Head Orientation Analysis (Looking at phone / turned sideways / head slumped)
+// Advanced MediaPipe FaceLandmarker + FaceDetector hook for:
+// 1. Face Presence / Missing Detection
+// 2. Real Eye-Closure Sleep Detection (5s light sleep & 30s deep sleep)
+// 3. Posture & Head Orientation Analysis
+// 4. Expression & Mood Analysis: Yawn Detection & Smile / Laughing Detection
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { FaceLandmarker, FaceDetector, FilesetResolver } from '@mediapipe/tasks-vision';
@@ -16,12 +17,20 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
   const [distractedDuration, setDistractedDuration] = useState(0);
   const [faceBoundingBox, setFaceBoundingBox] = useState(null);
 
+  // Expression States
+  const [isYawning, setIsYawning] = useState(false);
+  const [isSmiling, setIsSmiling] = useState(false);
+  const [expressionMood, setExpressionMood] = useState('Neutral');
+
   const landmarkerRef = useRef(null);
   const detectorFallbackRef = useRef(null);
   const isLandmarkerActiveRef = useRef(false);
 
   const missingStartTimeRef = useRef(null);
   const distractedStartTimeRef = useRef(null);
+  const yawnStartTimeRef = useRef(null);
+  const smileStartTimeRef = useRef(null);
+
   const animFrameIdRef = useRef(null);
   const lastDetectTimeRef = useRef(0);
   const lastTimestampMsRef = useRef(0);
@@ -45,7 +54,7 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
 
         if (!isSubscribed) return;
 
-        // Try FaceLandmarker first (provides 478 3D landmarks + blendshapes for eyes/sleep)
+        // Try FaceLandmarker first (provides 478 3D landmarks + blendshapes)
         try {
           const landmarker = await FaceLandmarker.createFromOptions(vision, {
             baseOptions: {
@@ -121,21 +130,16 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
 
   // Eye Aspect Ratio (EAR) calculation for eye closure
   const calculateEyeClosure = useCallback((landmarks, blendshapes) => {
-    // 1. Blendshapes score check (0.0 = wide open, 1.0 = fully closed)
     if (blendshapes && blendshapes.length > 0) {
       const categories = blendshapes[0].categories || [];
       const blinkLeft = categories.find((c) => c.categoryName === 'eyeBlinkLeft')?.score || 0;
       const blinkRight = categories.find((c) => c.categoryName === 'eyeBlinkRight')?.score || 0;
 
-      // Both eyes closed
       if (blinkLeft > 0.45 && blinkRight > 0.45) {
         return true;
       }
     }
 
-    // 2. Geometric Eye Aspect Ratio (EAR)
-    // Left eye landmarks: 33 (outer), 133 (inner), 160 (top), 158 (top), 144 (bottom), 153 (bottom)
-    // Right eye landmarks: 263 (outer), 362 (inner), 385 (top), 387 (top), 373 (bottom), 380 (bottom)
     if (landmarks && landmarks.length >= 468) {
       const leftH = Math.hypot(landmarks[33].x - landmarks[133].x, landmarks[33].y - landmarks[133].y);
       const leftV1 = Math.hypot(landmarks[160].x - landmarks[144].x, landmarks[160].y - landmarks[144].y);
@@ -155,22 +159,19 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
     return false;
   }, []);
 
-  // Check posture & orientation (head turned sideways / slumped down)
+  // Posture Analysis
   const checkPostureDistracted = useCallback((landmarks, blendshapes, videoWidth, videoHeight) => {
     if (!landmarks || landmarks.length < 468) return false;
 
-    // Check 1: Blendshapes gaze looking down at phone
     if (blendshapes && blendshapes.length > 0) {
       const categories = blendshapes[0].categories || [];
       const lookDownLeft = categories.find((c) => c.categoryName === 'eyeLookDownLeft')?.score || 0;
       const lookDownRight = categories.find((c) => c.categoryName === 'eyeLookDownRight')?.score || 0;
       if (lookDownLeft > 0.75 && lookDownRight > 0.75) {
-        return true; // Continuously staring down at phone
+        return true;
       }
     }
 
-    // Check 2: Head yaw (turned left/right looking away)
-    // Landmark 4 = Nose tip, 234 = Left face edge, 454 = Right face edge
     const nose = landmarks[4];
     const leftEdge = landmarks[234];
     const rightEdge = landmarks[454];
@@ -180,26 +181,59 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
       const distRight = Math.abs(nose.x - rightEdge.x);
       if (distLeft > 0 && distRight > 0) {
         const ratio = distLeft / distRight;
-        // Turned away sideways significantly (looking at phone/side)
         if (ratio < 0.28 || ratio > 3.6) {
           return true;
         }
       }
     }
 
-    // Check 3: Slumped down on desk
-    // Forehead (10), Chin (152)
     const forehead = landmarks[10];
     const chin = landmarks[152];
     if (chin && forehead) {
       const faceCenterY = (chin.y + forehead.y) / 2;
-      // Head dropped very low in the frame (sleeping on table)
       if (faceCenterY > 0.88) {
         return true;
       }
     }
 
     return false;
+  }, []);
+
+  // Expression & Mood Analysis (Yawn, Smile, Laugh)
+  const analyzeExpressions = useCallback((landmarks, blendshapes) => {
+    let rawYawn = false;
+    let rawSmile = false;
+    let mood = 'Focused 🎯';
+
+    if (blendshapes && blendshapes.length > 0) {
+      const categories = blendshapes[0].categories || [];
+      const jawOpen = categories.find((c) => c.categoryName === 'jawOpen')?.score || 0;
+      const smileLeft = categories.find((c) => c.categoryName === 'mouthSmileLeft')?.score || 0;
+      const smileRight = categories.find((c) => c.categoryName === 'mouthSmileRight')?.score || 0;
+
+      // Yawn detection (jaw opened wide)
+      if (jawOpen > 0.60) {
+        rawYawn = true;
+        mood = 'Yawning 🥱';
+      }
+
+      // Smile / Laughing detection
+      if (smileLeft > 0.55 && smileRight > 0.55) {
+        rawSmile = true;
+        mood = 'Smiling / Laughing 😂';
+      }
+    } else if (landmarks && landmarks.length >= 468) {
+      // Geometric fallback
+      // Top lip (13), Bottom lip (14), Lip width (61 to 291)
+      const mouthHeight = Math.hypot(landmarks[13].x - landmarks[14].x, landmarks[13].y - landmarks[14].y);
+      const mouthWidth = Math.hypot(landmarks[61].x - landmarks[291].x, landmarks[61].y - landmarks[291].y);
+      if (mouthWidth > 0 && mouthHeight / mouthWidth > 0.55) {
+        rawYawn = true;
+        mood = 'Yawning 🥱';
+      }
+    }
+
+    return { rawYawn, rawSmile, mood };
   }, []);
 
   // Main Detection Loop
@@ -215,7 +249,6 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
     }
 
     const now = performance.now();
-    // Run detection loop at ~150ms interval (~6.6 FPS)
     if (now - lastDetectTimeRef.current >= 150) {
       lastDetectTimeRef.current = now;
 
@@ -226,6 +259,9 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
       try {
         let hasFace = false;
         let isSleepingOrDistracted = false;
+        let detectedYawn = false;
+        let detectedSmile = false;
+        let currentMood = 'Focused 🎯';
 
         if (isLandmarkerActiveRef.current && landmarkerRef.current) {
           const result = landmarkerRef.current.detectForVideo(video, timestampMs);
@@ -236,7 +272,6 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
             hasFace = true;
             const landmarks = faceLandmarksList[0];
 
-            // Compute Bounding Box from 478 landmarks
             let minX = 1, minY = 1, maxX = 0, maxY = 0;
             for (let i = 0; i < landmarks.length; i++) {
               const pt = landmarks[i];
@@ -246,31 +281,30 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
               if (pt.y > maxY) maxY = pt.y;
             }
 
-            const originX = minX * video.videoWidth;
-            const originY = minY * video.videoHeight;
-            const width = (maxX - minX) * video.videoWidth;
-            const height = (maxY - minY) * video.videoHeight;
-
             setFaceBoundingBox({
-              originX,
-              originY,
-              width,
-              height,
+              originX: minX * video.videoWidth,
+              originY: minY * video.videoHeight,
+              width: (maxX - minX) * video.videoWidth,
+              height: (maxY - minY) * video.videoHeight,
               videoWidth: video.videoWidth,
               videoHeight: video.videoHeight
             });
 
-            // 1. Check real eye closure (sleeping / eyes closed)
+            // 1. Eye Closure / Sleep
             const isEyesClosed = calculateEyeClosure(landmarks, faceBlendshapesList);
-            // 2. Check posture (phone / looking away / slumped on desk)
+            // 2. Posture
             const isPostureDistracted = checkPostureDistracted(landmarks, faceBlendshapesList, video.videoWidth, video.videoHeight);
+            // 3. Expressions (Yawn / Smile)
+            const expr = analyzeExpressions(landmarks, faceBlendshapesList);
+            detectedYawn = expr.rawYawn;
+            detectedSmile = expr.rawSmile;
+            currentMood = isEyesClosed ? 'Sleeping 😴' : expr.mood;
 
             if (isEyesClosed || isPostureDistracted) {
               isSleepingOrDistracted = true;
             }
           }
         } else if (detectorFallbackRef.current) {
-          // Fallback BlazeFace Detector
           const result = detectorFallbackRef.current.detectForVideo(video, timestampMs);
           const detections = result.detections || [];
           if (detections.length > 0) {
@@ -285,17 +319,13 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
                 videoWidth: video.videoWidth,
                 videoHeight: video.videoHeight
               });
-
-              // Simple head slump check
               const centerY = (bbox.originY + bbox.height / 2) / video.videoHeight;
-              if (centerY > 0.85) {
-                isSleepingOrDistracted = true;
-              }
+              if (centerY > 0.85) isSleepingOrDistracted = true;
             }
           }
         }
 
-        // Debouncing Presence / Absence
+        // Presence check
         if (hasFace) {
           consecutivePresentRef.current += 1;
           consecutiveMissingRef.current = 0;
@@ -311,8 +341,12 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
           setIsFaceDetected(true);
           missingStartTimeRef.current = null;
           setMissingDuration(0);
+          setExpressionMood(currentMood);
 
-          // Handle Sleep / Distraction duration
+          // Handle Yawn & Smile
+          setIsYawning(detectedYawn);
+          setIsSmiling(detectedSmile);
+
           if (isSleepingOrDistracted) {
             consecutiveDistractedRef.current += 1;
             consecutiveNormalRef.current = 0;
@@ -327,9 +361,7 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
             }
             const distSec = Math.floor((Date.now() - distractedStartTimeRef.current) / 1000);
             setDistractedDuration(distSec);
-            if (distSec >= 5) {
-              setIsDistracted(true);
-            }
+            if (distSec >= 5) setIsDistracted(true);
           } else if (consecutiveNormalRef.current >= 2) {
             distractedStartTimeRef.current = null;
             setDistractedDuration(0);
@@ -339,6 +371,9 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
           setFaceBoundingBox(null);
           setIsFaceDetected(false);
           setIsDistracted(false);
+          setIsYawning(false);
+          setIsSmiling(false);
+          setExpressionMood('Absent 👻');
           distractedStartTimeRef.current = null;
           setDistractedDuration(0);
 
@@ -356,17 +391,13 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
     if (isMonitoring && isCameraReady) {
       animFrameIdRef.current = requestAnimationFrame(detectFrame);
     }
-  }, [isMonitoring, isCameraReady, videoRef, calculateEyeClosure, checkPostureDistracted]);
+  }, [isMonitoring, isCameraReady, videoRef, calculateEyeClosure, checkPostureDistracted, analyzeExpressions]);
 
-  // Handle loop start/stop
   useEffect(() => {
     if (isMonitoring && isCameraReady) {
       animFrameIdRef.current = requestAnimationFrame(detectFrame);
     } else {
-      if (animFrameIdRef.current) {
-        cancelAnimationFrame(animFrameIdRef.current);
-        animFrameIdRef.current = null;
-      }
+      if (animFrameIdRef.current) cancelAnimationFrame(animFrameIdRef.current);
       consecutivePresentRef.current = 0;
       consecutiveMissingRef.current = 0;
       consecutiveDistractedRef.current = 0;
@@ -378,13 +409,14 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
       setDistractedDuration(0);
       setIsFaceDetected(true);
       setIsDistracted(false);
+      setIsYawning(false);
+      setIsSmiling(false);
+      setExpressionMood('Neutral');
       setFaceBoundingBox(null);
     }
 
     return () => {
-      if (animFrameIdRef.current) {
-        cancelAnimationFrame(animFrameIdRef.current);
-      }
+      if (animFrameIdRef.current) cancelAnimationFrame(animFrameIdRef.current);
     };
   }, [isMonitoring, isCameraReady, detectFrame]);
 
@@ -395,6 +427,9 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
     missingDuration,
     isDistracted,
     distractedDuration,
-    faceBoundingBox
+    faceBoundingBox,
+    isYawning,
+    isSmiling,
+    expressionMood
   };
 }

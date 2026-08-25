@@ -1,6 +1,6 @@
 // src/utils/audioManager.js
 // FocusGuard AI Indian Meme Sound Manager
-// Featuring: Modi Ji, Rahul Gandhi, ACP Pradyuman (CID), Bhaiyaaa, Mamata Banerjee (Momota)
+// Featuring: Modi Ji, Rahul Gandhi, ACP Pradyuman (CID), Bhaiyaaa, Mamata Banerjee (Momota), Puneet Superstar, Baburao, Ashneer, Arnab
 
 const AUDIO_FILES = {
   'start-study': [
@@ -33,6 +33,31 @@ const AUDIO_FILES = {
     '/audio/sleep-warning.wav',
     'https://www.myinstants.com/media/sounds/khelaa-hobee.mp3'
   ],
+  'yawn-meme': [
+    '/audio/yawn-meme.mp3',
+    '/audio/yawn-meme.wav',
+    'https://www.myinstants.com/media/sounds/saale-itne-chaate-marunga-puneet-superstar.mp3'
+  ],
+  'smile-meme': [
+    '/audio/smile-meme.mp3',
+    '/audio/smile-meme.wav',
+    'https://www.myinstants.com/media/sounds/arnab-kuch-bhi.mp3'
+  ],
+  'noise-meme': [
+    '/audio/noise-meme.mp3',
+    '/audio/noise-meme.wav',
+    'https://www.myinstants.com/media/sounds/chup-bilkul-chup.mp3'
+  ],
+  'ashneer-meme': [
+    '/audio/ashneer-meme.mp3',
+    '/audio/ashneer-meme.wav',
+    'https://www.myinstants.com/media/sounds/kya-kar-raha-hai-tu.mp3'
+  ],
+  'puneet-meme': [
+    '/audio/puneet-meme.mp3',
+    '/audio/puneet-meme.wav',
+    'https://www.myinstants.com/media/sounds/saale-itne-chaate-marunga-puneet-superstar.mp3'
+  ]
 };
 
 export const FUNNY_MEMES = {
@@ -65,6 +90,18 @@ export const FUNNY_MEMES = {
     { text: 'Momota: Khela Hobe! Utho bhai, ghumano bondho koro!', tag: '💥 MOMOTA (KHELA HOBE)' },
     { text: 'WAKE UP! ৩০ সেকেন্ড ধরে ঘুমাচ্ছো! Kumbhakarna naki tumi?!', tag: '⏰ DEEP SLEEP (30s+)' },
     { text: '30 second hoye gelo, ekhono ghumaccho? Bapre ki ghum!', tag: '😴 SLEEPING BEAUTY' }
+  ],
+  'yawn-meme': [
+    { text: 'Puneet Superstar: Saale itne chaate marunga na! Padhai ke time jhamai/yawn le raha hai?!', tag: '🥱 YAWN DETECTED' },
+    { text: 'Ashneer: Bhai kya kar raha hai tu yaar?! Munh band kar ke padh!', tag: '🤦‍♂️ DOGLAPAN' }
+  ],
+  'smile-meme': [
+    { text: 'Arnab Goswami: Kuch bhi?! Kuch bhi?! Padhai ke time akele akele kyu hass raha hai?', tag: '😂 SMILING AT PHONE' },
+    { text: 'ACP Pradyuman: Daya! Bachha padhte padhte muskura raha hai... Zarur koi chakkar hai!', tag: '🕵️‍♂️ SUSPICIOUS SMILE' }
+  ],
+  'noise-meme': [
+    { text: 'Baburao / Nana: Chup! Bilkul Chup! Padhai ke time itna shor kyu macha raha hai?!', tag: '🤫 LOUD NOISE / TALKING' },
+    { text: 'Awaaz neeche! Silence zone hai ye!', tag: '📢 NOISE ALERT' }
   ]
 };
 
@@ -74,7 +111,7 @@ class AudioManager {
     this.volume = 0.8;
     this.muted = false;
     this.lastPlayTimes = {};
-    this.cooldownMs = 3500;
+    this.cooldownMs = 3000;
     this.audioContext = null;
   }
 

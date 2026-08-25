@@ -1,8 +1,8 @@
 // src/components/StatusPanel.jsx
-// Displays main session status indicator, funny message alert card, audio controls, and debug panel.
+// Displays main session status, expression mood badge, noise level meter, meme card, audio controls, and debug panel.
 
 import React, { useState } from 'react';
-import { Volume2, VolumeX, ShieldAlert, Bug, ChevronDown, ChevronUp } from 'lucide-react';
+import { Volume2, VolumeX, ShieldAlert, Bug, ChevronDown, ChevronUp, Mic, Smile } from 'lucide-react';
 
 export function StatusPanel({
   sessionStatus,
@@ -11,7 +11,10 @@ export function StatusPanel({
   isMuted,
   onVolumeChange,
   onMuteToggle,
-  debugInfo
+  debugInfo,
+  expressionMood = 'Focused 🎯',
+  noiseLevel = 0,
+  isLoudNoise = false
 }) {
   const [showDebug, setShowDebug] = useState(false);
 
@@ -22,7 +25,16 @@ export function StatusPanel({
       case 'Face Not Detected':
         return { color: 'red', text: '🚨 Face Not Detected!', bgClass: 'status-alert' };
       case 'Distracted':
-        return { color: 'red', text: '⚠️ Distracted (Looking Away)', bgClass: 'status-alert' };
+      case 'Light Sleep / Distracted (5s)':
+        return { color: 'red', text: '⚠️ Distracted / Light Sleep', bgClass: 'status-alert' };
+      case 'Deep Sleep (30s+)':
+        return { color: 'red', text: '😴 Deep Sleep (30s+)', bgClass: 'status-alert' };
+      case 'Yawn Detected':
+        return { color: 'yellow', text: '🥱 Yawning / Jhamai Alert', bgClass: 'status-warning' };
+      case 'Smiling / Daydreaming':
+        return { color: 'yellow', text: '😂 Smiling / Daydreaming', bgClass: 'status-warning' };
+      case 'Loud Noise Detected':
+        return { color: 'red', text: '📢 Noise / Talking Detected!', bgClass: 'status-alert' };
       case 'Tab Changed':
         return { color: 'yellow', text: '👀 Tab Switched / Window Blur', bgClass: 'status-warning' };
       case 'Paused':
@@ -67,13 +79,31 @@ export function StatusPanel({
         <span className="status-text">{theme.text}</span>
       </div>
 
+      {/* Live Mood & Noise Indicators */}
+      <div className="indicators-row">
+        <div className="indicator-pill mood-pill">
+          <Smile size={16} className="indicator-icon" />
+          <span className="indicator-label">Mood:</span>
+          <span className="indicator-val">{expressionMood}</span>
+        </div>
+
+        <div className={`indicator-pill noise-pill ${isLoudNoise ? 'noise-alert-pill' : ''}`}>
+          <Mic size={16} className="indicator-icon" />
+          <span className="indicator-label">Mic Noise:</span>
+          <span className="indicator-val">{noiseLevel}%</span>
+          <div className="mini-noise-bar">
+            <div className="mini-noise-fill" style={{ width: `${Math.min(100, noiseLevel * 2)}%` }} />
+          </div>
+        </div>
+      </div>
+
       {/* Funny Meme / Warning Alert Area */}
       {funnyMessage && (
         <div className="funny-message-box">
           <div className="meme-icon-pulse">😂</div>
           <div className="message-content">
             <div className="meme-header-row">
-              <span className="message-title">🔥 STUDY MEME ALERT:</span>
+              <span className="message-title">🔥 HINDI MEME ALERT:</span>
             </div>
             <p className="message-body">"{funnyMessage}"</p>
           </div>
@@ -87,7 +117,7 @@ export function StatusPanel({
           onClick={() => setShowDebug(!showDebug)}
         >
           <Bug size={16} />
-          <span>{showDebug ? 'Hide Debug Panel' : 'Show Debug Panel'}</span>
+          <span>{showDebug ? 'Hide Debug Diagnostics' : 'Show Debug Diagnostics'}</span>
           {showDebug ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
         </button>
       </div>
@@ -104,6 +134,10 @@ export function StatusPanel({
               </span>
             </div>
             <div className="debug-item">
+              <span className="label">Expression Mood:</span>
+              <span className="val">{expressionMood}</span>
+            </div>
+            <div className="debug-item">
               <span className="label">Missing Duration:</span>
               <span className="val">{debugInfo.missingDuration}s</span>
             </div>
@@ -112,12 +146,8 @@ export function StatusPanel({
               <span className="val">{debugInfo.distractedDuration}s</span>
             </div>
             <div className="debug-item">
-              <span className="label">Camera Status:</span>
-              <span className="val">{debugInfo.cameraStatus}</span>
-            </div>
-            <div className="debug-item">
-              <span className="label">Monitoring State:</span>
-              <span className="val">{debugInfo.isMonitoring ? 'Active' : 'Inactive'}</span>
+              <span className="label">Noise Level:</span>
+              <span className="val">{noiseLevel}%</span>
             </div>
             <div className="debug-item">
               <span className="label">MediaPipe Model:</span>
