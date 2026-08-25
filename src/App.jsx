@@ -1,9 +1,10 @@
 // src/App.jsx
-// FocusGuard AI - 18+ Spicy Hindi Meme & Facial Expression AI Study Monitor
+// FocusGuard AI - 18+ Spicy Hindi Meme, Facial Expression & Object/Item Detection AI Study Monitor
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useCamera } from './hooks/useCamera';
 import { useFaceDetection } from './hooks/useFaceDetection';
+import { useObjectDetection } from './hooks/useObjectDetection';
 import { useVisibilityMonitor } from './hooks/useVisibilityMonitor';
 import { audioManager } from './utils/audioManager';
 
@@ -50,6 +51,18 @@ export default function App() {
     funnyMessageTimerRef.current = setTimeout(() => setFunnyMessage(''), 6000);
   }, []);
 
+  // Event Helper
+  const addEvent = useCallback((type, title, message) => {
+    const newEvent = {
+      id: Date.now() + Math.random(),
+      type,
+      title,
+      message,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    };
+    setEvents((prev) => [newEvent, ...prev].slice(0, 10));
+  }, []);
+
   // Camera Hook
   const {
     videoRef,
@@ -62,7 +75,7 @@ export default function App() {
 
   // Face Detection Hook with Full Facial Expression Analysis
   const {
-    detectorReady,
+    detectorReady: faceDetectorReady,
     modelError,
     isFaceDetected,
     missingDuration,
@@ -77,17 +90,26 @@ export default function App() {
     expressionMood
   } = useFaceDetection({ videoRef, isCameraReady, isMonitoring });
 
-  // Event Helper
-  const addEvent = useCallback((type, title, message) => {
-    const newEvent = {
-      id: Date.now() + Math.random(),
-      type,
-      title,
-      message,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
-    };
-    setEvents((prev) => [newEvent, ...prev].slice(0, 10));
-  }, []);
+  // Object / Item Detection Hook (Phone, Book, Bottle, Cup, etc. with Voice Announcement)
+  const handlePhoneDetected = useCallback(() => {
+    if (isMonitoring) {
+      setSessionStatus('Distracted');
+      setFunnyMessageWithTimeout('Phone Detected! Chal Bhosdike phone hata aur padhai kar!');
+      audioManager.playAudio('chal-bsdk-meme', false);
+      addEvent('phone-detected', '📱 Phone Detected', 'Phone spotted in front of camera!');
+    }
+  }, [isMonitoring, addEvent, setFunnyMessageWithTimeout]);
+
+  const {
+    objectDetectorReady,
+    detectedObjects,
+    latestItemAnnouncement
+  } = useObjectDetection({
+    videoRef,
+    isCameraReady,
+    isMonitoring,
+    onPhoneDetected: handlePhoneDetected
+  });
 
   // Audio Controls
   const handleVolumeChange = (newVol) => {
@@ -125,7 +147,7 @@ export default function App() {
     const msg = audioManager.getFunnyMessage('start-study');
     setFunnyMessageWithTimeout(msg);
     audioManager.playAudio('start-study', true);
-    addEvent('start-study', 'Modi Ji: Study Started', 'Monitoring initiated with 18+ meme pack.');
+    addEvent('start-study', 'Modi Ji: Study Started', 'Monitoring initiated with 18+ meme pack & object detector.');
   };
 
   // Stop Study Session
@@ -340,7 +362,7 @@ export default function App() {
           <div>
             <h1 className="app-title">FocusGuard AI</h1>
             <p className="app-subtitle">
-              18+ Spicy Hindi Meme & Facial Expression AI Study Monitor
+              Face Expression, AI Item/Object Recognition & 18+ Hindi Meme Monitor
             </p>
           </div>
         </div>
@@ -359,6 +381,8 @@ export default function App() {
             isMonitoring={isMonitoring}
             faceBoundingBox={faceBoundingBox}
             expressionMood={expressionMood}
+            detectedObjects={detectedObjects}
+            latestItemAnnouncement={latestItemAnnouncement}
           />
 
           <StudyControls
@@ -389,7 +413,7 @@ export default function App() {
               distractedDuration,
               cameraStatus,
               isMonitoring,
-              detectorReady
+              detectorReady: faceDetectorReady && objectDetectorReady
             }}
           />
 
@@ -405,7 +429,7 @@ export default function App() {
 
       {/* Footer & Credits */}
       <footer className="app-footer">
-        <p>FocusGuard AI • 100% Local Browser AI • 18+ Spicy Hindi Meme Voice Pack • Privacy First</p>
+        <p>FocusGuard AI • 100% Local Browser AI • Object Recognition & Voice Announcement • Privacy First</p>
         <p className="app-credits">
           Developed by <strong>Rakesh</strong> and Collaborated with <strong>Ani (main developer)</strong> <Heart size={14} className="heart-icon" />
         </p>
