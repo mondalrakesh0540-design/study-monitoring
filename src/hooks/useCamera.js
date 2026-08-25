@@ -1,5 +1,5 @@
 // src/hooks/useCamera.js
-// Custom React hook to manage webcam streams, permissions, and status.
+// Ultra-resilient React hook to manage webcam streams, multi-constraint fallback, permissions, and lifecycle.
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 
@@ -17,77 +17,126 @@ export function useCamera() {
   const [errorMessage, setErrorMessage] = useState('');
   const [stream, setStream] = useState(null);
   const videoRef = useRef(null);
+  const streamRef = useRef(null);
 
   const stopCamera = useCallback(() => {
-    if (stream) {
-      stream.getTracks().forEach((track) => track.stop());
-      setStream(null);
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => {
+        try {
+          track.stop();
+        } catch (e) {}
+      });
+      streamRef.current = null;
     }
     if (videoRef.current) {
-      videoRef.current.srcObject = null;
+      try {
+        videoRef.current.srcObject = null;
+      } catch (e) {}
     }
+    setStream(null);
     setCameraStatus(CAMERA_STATUS.OFF);
     setErrorMessage('');
-  }, [stream]);
+    console.log('[Camera] Webcam stopped.');
+  }, []);
 
   const startCamera = useCallback(async () => {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       setCameraStatus(CAMERA_STATUS.NOT_AVAILABLE);
-      setErrorMessage('Browser does not support camera access or context is insecure (requires HTTPS or localhost).');
+      setErrorMessage('Browser does not support camera access or context is insecure (requires HTTPS).');
       return;
     }
 
     setCameraStatus(CAMERA_STATUS.REQUESTING);
     setErrorMessage('');
 
+    let mediaStream = null;
+
+    // 1. Try high-definition user-facing camera first
     try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
+      mediaStream = await navigator.mediaDevices.getUserMedia({
         video: {
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
+          width: { ideal: 1280, min: 640 },
+          height: { ideal: 720, min: 480 },
           facingMode: 'user'
         },
         audio: false
       });
+    } catch (firstErr) {
+      console.warn('[Camera] Ideal constraints failed, trying basic fallback { video: true }...', firstErr);
+      // 2. Fallback to basic video constraint
+      try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: false
+        });
+      } catch (fallbackErr) {
+        console.error('[Camera] Access Error:', fallbackErr);
+        if (fallbackErr.name === 'NotAllowedError' || fallbackErr.name === 'PermissionDeniedError') {
+          setCameraStatus(CAMERA_STATUS.DENIED);
+          setErrorMessage('Camera permission was denied. Please allow camera access in your browser settings.');
+        } else if (fallbackErr.name === 'NotFoundError' || fallbackErr.name === 'DevicesNotFoundError') {
+          setCameraStatus(CAMERA_STATUS.NOT_AVAILABLE);
+          setErrorMessage('No camera device was found on your system.');
+        } else if (fallbackErr.name === 'NotReadableError' || fallbackErr.name === 'TrackStartError') {
+          setCameraStatus(CAMERA_STATUS.ERROR);
+          setErrorMessage('Camera is currently in use by another app or browser tab. Please close other camera apps.');
+        } else {
+          setCameraStatus(CAMERA_STATUS.ERROR);
+          setErrorMessage(fallbackErr.message || 'Failed to start camera feed.');
+        }
+        return;
+      }
+    }
 
+    if (mediaStream) {
+      streamRef.current = mediaStream;
       setStream(mediaStream);
-      setCameraStatus(CAMERA_STATUS.READY);
-    } catch (error) {
-      console.error('Camera Access Error:', error);
-      if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
-        setCameraStatus(CAMERA_STATUS.DENIED);
-        setErrorMessage('Camera permission was denied. Please allow camera access in browser settings.');
-      } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
-        setCameraStatus(CAMERA_STATUS.NOT_AVAILABLE);
-        setErrorMessage('No webcam device was found on your system.');
-      } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
-        setCameraStatus(CAMERA_STATUS.ERROR);
-        setErrorMessage('Camera is currently in use by another application or hardware error occurred.');
+
+      if (videoRef.current) {
+        const video = videoRef.current;
+        video.srcObject = mediaStream;
+        video.setAttribute('playsinline', 'true');
+        video.setAttribute('autoplay', 'true');
+        video.muted = true;
+
+        const playVideo = async () => {
+          try {
+            await video.play();
+            setCameraStatus(CAMERA_STATUS.READY);
+            console.log('[Camera] Webcam stream playing successfully.');
+          } catch (playErr) {
+            console.warn('[Camera] video.play() waiting for metadata...', playErr);
+          }
+        };
+
+        video.onloadedmetadata = playVideo;
+        video.oncanplay = playVideo;
+        playVideo();
       } else {
-        setCameraStatus(CAMERA_STATUS.ERROR);
-        setErrorMessage(error.message || 'Failed to start camera feed.');
+        setCameraStatus(CAMERA_STATUS.READY);
       }
     }
   }, []);
 
-  // Ensure stream is bound to video element whenever stream or videoRef updates
+  // Ensure stream binding is maintained on re-renders
   useEffect(() => {
     if (videoRef.current && stream) {
-      videoRef.current.srcObject = stream;
-      videoRef.current.onloadedmetadata = () => {
-        videoRef.current.play().catch((e) => console.warn('Video play error:', e));
-      };
+      const video = videoRef.current;
+      if (video.srcObject !== stream) {
+        video.srcObject = stream;
+        video.play().catch((e) => console.warn('[Camera] Play sync error:', e));
+      }
     }
   }, [stream]);
 
-  // Cleanup tracks when component unmounts
+  // Clean up tracks when component unmounts
   useEffect(() => {
     return () => {
-      if (stream) {
-        stream.getTracks().forEach((track) => track.stop());
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
       }
     };
-  }, [stream]);
+  }, []);
 
   return {
     videoRef,

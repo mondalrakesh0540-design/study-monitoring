@@ -274,7 +274,11 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
     }
 
     const video = videoRef.current;
-    if (video.readyState < 2 || video.videoWidth === 0 || video.videoHeight === 0 || video.paused || video.ended) {
+    if (video.paused && !video.ended) {
+      video.play().catch(() => {});
+    }
+
+    if (video.readyState < 2 || video.videoWidth === 0 || video.videoHeight === 0) {
       animFrameIdRef.current = requestAnimationFrame(detectFrame);
       return;
     }
