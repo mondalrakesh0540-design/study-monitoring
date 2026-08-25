@@ -1,8 +1,8 @@
 // src/components/CameraMonitor.jsx
-// Displays live webcam preview, status indicators, bounding box, and camera controls.
+// Live webcam monitor with dynamic AI mood bounding box, ambient sound wave meter, and HUD overlays.
 
 import React from 'react';
-import { Camera, CameraOff, Video, AlertTriangle } from 'lucide-react';
+import { Camera, CameraOff, Video, AlertTriangle, Sparkles, Mic } from 'lucide-react';
 import { CAMERA_STATUS } from '../hooks/useCamera';
 
 export function CameraMonitor({
@@ -12,7 +12,10 @@ export function CameraMonitor({
   startCamera,
   stopCamera,
   isMonitoring,
-  faceBoundingBox
+  faceBoundingBox,
+  expressionMood = 'Focused 🎯',
+  noiseLevel = 0,
+  isLoudNoise = false
 }) {
   const renderBadge = () => {
     switch (cameraStatus) {
@@ -46,6 +49,15 @@ export function CameraMonitor({
     const widthPercent = (width / videoWidth) * 100;
     const heightPercent = (height / videoHeight) * 100;
 
+    let bboxColor = '#22c55e'; // Green
+    if (expressionMood.includes('Yawn') || expressionMood.includes('Smile') || expressionMood.includes('Wink')) {
+      bboxColor = '#eab308'; // Yellow
+    } else if (expressionMood.includes('Sleep') || expressionMood.includes('Absent') || expressionMood.includes('Angry') || isLoudNoise) {
+      bboxColor = '#ef4444'; // Red
+    } else if (expressionMood.includes('Shocked')) {
+      bboxColor = '#a855f7'; // Purple
+    }
+
     return (
       <div
         className="face-bbox"
@@ -53,10 +65,14 @@ export function CameraMonitor({
           left: `${leftPercent}%`,
           top: `${topPercent}%`,
           width: `${widthPercent}%`,
-          height: `${heightPercent}%`
+          height: `${heightPercent}%`,
+          borderColor: bboxColor,
+          boxShadow: `0 0 15px ${bboxColor}`
         }}
       >
-        <span className="bbox-label">Target Focused</span>
+        <span className="bbox-label" style={{ backgroundColor: bboxColor }}>
+          {expressionMood}
+        </span>
       </div>
     );
   };
@@ -66,12 +82,12 @@ export function CameraMonitor({
       <div className="card-header">
         <div className="header-title">
           <Video className="icon" />
-          <h2>Live Camera Preview</h2>
+          <h2>Live AI Camera Preview</h2>
         </div>
         {renderBadge()}
       </div>
 
-      <div className="video-container">
+      <div className={`video-container ${isMonitoring ? 'video-active-hud' : ''}`}>
         <video
           ref={videoRef}
           playsInline
@@ -79,6 +95,16 @@ export function CameraMonitor({
           autoPlay
           className={`webcam-video ${cameraStatus === CAMERA_STATUS.READY ? 'active' : 'inactive'}`}
         />
+
+        {/* Live Audio Waveform HUD Overlay */}
+        {isMonitoring && (
+          <div className="camera-live-hud-top">
+            <div className={`camera-hud-chip ${isLoudNoise ? 'hud-chip-alert' : ''}`}>
+              <Mic size={14} className="hud-mic-icon" />
+              <span>{isLoudNoise ? 'LOUD NOISE DETECTED' : `Ambient Mic: ${noiseLevel}%`}</span>
+            </div>
+          </div>
+        )}
 
         {cameraStatus !== CAMERA_STATUS.READY && (
           <div className="video-placeholder">

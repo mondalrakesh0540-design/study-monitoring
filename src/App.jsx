@@ -384,6 +384,9 @@ export default function App() {
             stopCamera={stopCamera}
             isMonitoring={isMonitoring}
             faceBoundingBox={faceBoundingBox}
+            expressionMood={expressionMood}
+            noiseLevel={noiseLevel}
+            isLoudNoise={isLoudNoise}
           />
 
           <StudyControls

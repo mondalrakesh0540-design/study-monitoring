@@ -1,6 +1,6 @@
 // src/utils/audioManager.js
-// FocusGuard AI Indian Meme Sound Manager
-// Complete Hindi Meme Pack: Modi Ji, Rahul Gandhi, ACP Pradyuman, Baburao, Puneet Superstar, Arnab, Arpit Bala, Pushpa, Shabash Beta
+// High-performance FocusGuard AI Indian Meme Sound Manager
+// Includes pre-caching, instantaneous playback, volume control, and AudioContext unlock
 
 const AUDIO_FILES = {
   'start-study': [
@@ -129,11 +129,30 @@ class AudioManager {
     this.volume = 0.8;
     this.muted = false;
     this.lastPlayTimes = {};
-    this.cooldownMs = 3000;
+    this.cooldownMs = 2500;
     this.audioContext = null;
+    this.audioCache = {};
+
+    // Preload audio files for zero latency
+    if (typeof window !== 'undefined') {
+      this.preloadAll();
+    }
   }
 
-  // Called on user gesture
+  preloadAll() {
+    try {
+      for (const [key, paths] of Object.entries(AUDIO_FILES)) {
+        if (paths && paths.length > 0) {
+          const audio = new Audio(paths[0]);
+          audio.preload = 'auto';
+          this.audioCache[key] = audio;
+        }
+      }
+    } catch (e) {
+      console.warn('[AudioManager] Audio preloading skipped:', e);
+    }
+  }
+
   async unlockAudioContext() {
     try {
       if (!this.audioContext) {
@@ -153,6 +172,11 @@ class AudioManager {
     if (this.currentAudio) {
       this.currentAudio.volume = this.muted ? 0 : this.volume;
     }
+    for (const key in this.audioCache) {
+      if (this.audioCache[key]) {
+        this.audioCache[key].volume = this.muted ? 0 : this.volume;
+      }
+    }
   }
 
   getVolume() {
@@ -163,6 +187,11 @@ class AudioManager {
     this.muted = isMuted;
     if (this.currentAudio) {
       this.currentAudio.volume = this.muted ? 0 : this.volume;
+    }
+    for (const key in this.audioCache) {
+      if (this.audioCache[key]) {
+        this.audioCache[key].volume = this.muted ? 0 : this.volume;
+      }
     }
   }
 
@@ -208,6 +237,21 @@ class AudioManager {
     this.stopCurrent();
     this.lastPlayTimes[eventType] = Date.now();
 
+    // 1. Try cached audio element first (0ms latency)
+    if (this.audioCache[eventType]) {
+      try {
+        const audio = this.audioCache[eventType];
+        audio.currentTime = 0;
+        audio.volume = this.muted ? 0 : this.volume;
+        this.currentAudio = audio;
+        await audio.play();
+        return { played: true };
+      } catch (err) {
+        console.warn(`[AudioManager] Cached play failed for ${eventType}, falling back:`, err);
+      }
+    }
+
+    // 2. Fallback to path list
     const paths = AUDIO_FILES[eventType] || [];
     let playedSuccessfully = false;
 
@@ -220,7 +264,7 @@ class AudioManager {
 
         await audio.play();
         playedSuccessfully = true;
-        console.log(`[AudioManager] Playing sound: ${audioPath}`);
+        this.audioCache[eventType] = audio;
         break;
       } catch (err) {
         console.warn(`[AudioManager] Playback failed for ${audioPath}:`, err.message);
@@ -255,6 +299,7 @@ class AudioManager {
         osc.type = 'sawtooth';
         osc.frequency.setValueAtTime(800, now);
         osc.frequency.exponentialRampToValueAtTime(400, now + 0.3);
+        osc.frequency.exponentialRampToValueAtTime(800, now + 0.6);
         gain.gain.setValueAtTime(vol, now);
         gain.gain.exponentialRampToValueAtTime(0.01, now + 1.2);
         osc.start(now);
