@@ -1,5 +1,5 @@
 // src/App.jsx
-// FocusGuard AI - 18+ Spicy Hindi Meme, Facial Expression & Object/Item Detection AI Study Monitor
+// FocusGuard AI - 18+ Spicy Hindi Meme, Facial Expression, AI Object Scanner & Study Guide Monitor
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useCamera } from './hooks/useCamera';
@@ -14,8 +14,10 @@ import { StatusPanel } from './components/StatusPanel';
 import { SessionTimer } from './components/SessionTimer';
 import { AlertHistory } from './components/AlertHistory';
 import { MemeSoundboard } from './components/MemeSoundboard';
+import { ItemDetectorPanel } from './components/ItemDetectorPanel';
+import { StudyGuidePanel } from './components/StudyGuidePanel';
 
-import { ShieldCheck, Heart } from 'lucide-react';
+import { ShieldCheck, Heart, LayoutDashboard, Box, BookOpen, Flame } from 'lucide-react';
 import './App.css';
 
 export default function App() {
@@ -24,6 +26,7 @@ export default function App() {
   const [funnyMessage, setFunnyMessage] = useState('');
   const [volume, setVolumeState] = useState(0.85);
   const [isMuted, setIsMutedState] = useState(false);
+  const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard' | 'scanner' | 'guide' | 'memes'
 
   // Timers State
   const [totalTime, setTotalTime] = useState(0);
@@ -362,16 +365,52 @@ export default function App() {
           <div>
             <h1 className="app-title">FocusGuard AI</h1>
             <p className="app-subtitle">
-              Face Expression, AI Item/Object Recognition & 18+ Hindi Meme Monitor
+              Face Expression, AI Item Recognition & 18+ Hindi Meme Study Monitor
             </p>
           </div>
         </div>
       </header>
 
-      {/* Main Grid Layout */}
+      {/* Responsive Mobile / Desktop Navigation Tab Bar */}
+      <nav className="app-tab-nav">
+        <button
+          className={`tab-btn ${activeTab === 'dashboard' ? 'active' : ''}`}
+          onClick={() => setActiveTab('dashboard')}
+        >
+          <LayoutDashboard size={18} />
+          <span>Live Dashboard</span>
+        </button>
+
+        <button
+          className={`tab-btn ${activeTab === 'scanner' ? 'active' : ''}`}
+          onClick={() => setActiveTab('scanner')}
+        >
+          <Box size={18} />
+          <span>Item Scanner</span>
+          {detectedObjects.length > 0 && <span className="tab-badge">{detectedObjects.length}</span>}
+        </button>
+
+        <button
+          className={`tab-btn ${activeTab === 'guide' ? 'active' : ''}`}
+          onClick={() => setActiveTab('guide')}
+        >
+          <BookOpen size={18} />
+          <span>Study Guide</span>
+        </button>
+
+        <button
+          className={`tab-btn ${activeTab === 'memes' ? 'active' : ''}`}
+          onClick={() => setActiveTab('memes')}
+        >
+          <Flame size={18} />
+          <span>18+ Memes</span>
+        </button>
+      </nav>
+
+      {/* Main Responsive Grid Layout */}
       <main className="dashboard-grid">
-        {/* Left Column: Camera Preview & Study Controls & 18+ Soundboard */}
-        <section className="dashboard-col left-col">
+        {/* Left Column: Camera Preview & Study Controls */}
+        <section className={`dashboard-col left-col ${activeTab !== 'dashboard' ? 'mobile-hidden' : ''}`}>
           <CameraMonitor
             videoRef={videoRef}
             cameraStatus={cameraStatus}
@@ -393,12 +432,17 @@ export default function App() {
             resetSession={resetSession}
           />
 
-          {/* Interactive Live 18+ Hindi Meme Soundboard */}
-          <MemeSoundboard onTriggerMeme={(msg) => setFunnyMessageWithTimeout(msg)} />
+          {/* AI Item Scanner Card (Desktop always visible, mobile switches on tab) */}
+          <ItemDetectorPanel
+            detectedObjects={detectedObjects}
+            latestItemAnnouncement={latestItemAnnouncement}
+            objectDetectorReady={objectDetectorReady}
+            isCameraReady={isCameraReady}
+          />
         </section>
 
-        {/* Right Column: Status Banner, Expression Indicators, Timers, History */}
-        <section className="dashboard-col right-col">
+        {/* Right Column: Status Banner, Timers, History, Study Guide & Meme Soundboard */}
+        <section className={`dashboard-col right-col ${activeTab !== 'dashboard' ? 'mobile-hidden' : ''}`}>
           <StatusPanel
             sessionStatus={sessionStatus}
             funnyMessage={funnyMessage}
@@ -423,13 +467,41 @@ export default function App() {
             distractedTime={distractedTime}
           />
 
+          <StudyGuidePanel />
+
+          <MemeSoundboard onTriggerMeme={(msg) => setFunnyMessageWithTimeout(msg)} />
+
           <AlertHistory events={events} />
         </section>
+
+        {/* Mobile Tab Dedicated Views (when user clicks dedicated tabs on phone) */}
+        {activeTab === 'scanner' && (
+          <section className="dashboard-col full-col mobile-only-view">
+            <ItemDetectorPanel
+              detectedObjects={detectedObjects}
+              latestItemAnnouncement={latestItemAnnouncement}
+              objectDetectorReady={objectDetectorReady}
+              isCameraReady={isCameraReady}
+            />
+          </section>
+        )}
+
+        {activeTab === 'guide' && (
+          <section className="dashboard-col full-col mobile-only-view">
+            <StudyGuidePanel />
+          </section>
+        )}
+
+        {activeTab === 'memes' && (
+          <section className="dashboard-col full-col mobile-only-view">
+            <MemeSoundboard onTriggerMeme={(msg) => setFunnyMessageWithTimeout(msg)} />
+          </section>
+        )}
       </main>
 
       {/* Footer & Credits */}
       <footer className="app-footer">
-        <p>FocusGuard AI • 100% Local Browser AI • Object Recognition & Voice Announcement • Privacy First</p>
+        <p>FocusGuard AI • 100% Local Browser AI • Object Recognition, Study Guide & 18+ Memes • Privacy First</p>
         <p className="app-credits">
           Developed by <strong>Rakesh</strong> and Collaborated with <strong>Ani (main developer)</strong> <Heart size={14} className="heart-icon" />
         </p>

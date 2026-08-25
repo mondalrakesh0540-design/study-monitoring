@@ -1,5 +1,5 @@
 // src/hooks/useObjectDetection.js
-// MediaPipe ObjectDetector hook with safe CPU execution to prevent WebGL/GPU conflicts with FaceLandmarker.
+// Tuned MediaPipe ObjectDetector hook for fast and accurate study item and distraction detection.
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { ObjectDetector, FilesetResolver } from '@mediapipe/tasks-vision';
@@ -24,18 +24,17 @@ const ITEM_EMOJIS = {
   'sandwich': '🥪',
   'orange': '🍊',
   'tv': '📺',
-  'chair': '🪑',
-  'person': '👤'
+  'chair': '🪑'
 };
 
 const ITEM_ANNOUNCEMENTS = {
-  'cell phone': 'Phone detected! Phone hatao aur padhai karo!',
-  'book': 'Book detected! Shabash, padhai chalu rakho!',
+  'cell phone': 'Phone detected! Chal Bhosdike phone hata aur padhai kar!',
+  'book': 'Book detected! Shabash, dhyan se padhai chalu rakho!',
   'bottle': 'Water bottle detected! Paani piyo aur fresh raho!',
-  'cup': 'Chai ya coffee cup detected!',
-  'laptop': 'Laptop detected!',
+  'cup': 'Chai ya coffee cup detected! Fresh ho jao!',
+  'laptop': 'Laptop detected! Study mode active!',
   'scissors': 'Scissors / Kaichi detected!',
-  'remote': 'Remote control detected!',
+  'remote': 'Remote control detected! TV bandh karo!',
   'clock': 'Clock / Ghadi detected! Time waste mat karo!',
   'mouse': 'Computer mouse detected!',
   'keyboard': 'Keyboard detected!',
@@ -56,7 +55,7 @@ export function useObjectDetection({ videoRef, isCameraReady, isMonitoring, onPh
   const lastAnnouncedItemRef = useRef('');
   const lastAnnounceTimeRef = useRef(0);
 
-  // Initialize MediaPipe Object Detector with robust CPU delegate
+  // Initialize MediaPipe Object Detector with high precision CPU mode
   useEffect(() => {
     let isSubscribed = true;
 
@@ -74,8 +73,8 @@ export function useObjectDetection({ videoRef, isCameraReady, isMonitoring, onPh
               'https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite0/float16/1/efficientdet_lite0.tflite',
             delegate: 'CPU'
           },
-          scoreThreshold: 0.38,
-          maxResults: 3,
+          scoreThreshold: 0.28, // Tuned for higher sensitivity
+          maxResults: 4,
           runningMode: 'VIDEO'
         });
 
@@ -86,9 +85,9 @@ export function useObjectDetection({ videoRef, isCameraReady, isMonitoring, onPh
 
         detectorRef.current = detector;
         setObjectDetectorReady(true);
-        console.log('[ObjectDetector] Object Detector initialized with reliable CPU mode.');
+        console.log('[ObjectDetector] Object Detector initialized with tuned sensitivity (0.28).');
       } catch (err) {
-        console.warn('[ObjectDetector] Model init error (non-fatal):', err);
+        console.warn('[ObjectDetector] Model init error:', err);
         if (isSubscribed) setObjectDetectorReady(false);
       }
     }
@@ -122,7 +121,7 @@ export function useObjectDetection({ videoRef, isCameraReady, isMonitoring, onPh
     }
 
     const now = performance.now();
-    if (now - lastDetectTimeRef.current >= 300) {
+    if (now - lastDetectTimeRef.current >= 200) {
       lastDetectTimeRef.current = now;
 
       const nowMs = Math.round(now);
@@ -166,12 +165,12 @@ export function useObjectDetection({ videoRef, isCameraReady, isMonitoring, onPh
 
         setDetectedObjects(items);
 
-        // Announce detected items with debounce
+        // Announce prominent detected item
         if (items.length > 0) {
           const topItem = items[0];
           const timeSinceLastAnnounce = Date.now() - lastAnnounceTimeRef.current;
 
-          if (topItem.label !== lastAnnouncedItemRef.current || timeSinceLastAnnounce > 7000) {
+          if (topItem.label !== lastAnnouncedItemRef.current || timeSinceLastAnnounce > 6000) {
             lastAnnouncedItemRef.current = topItem.label;
             lastAnnounceTimeRef.current = Date.now();
 
