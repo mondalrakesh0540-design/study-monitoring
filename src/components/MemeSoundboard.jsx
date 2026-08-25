@@ -1,18 +1,22 @@
 // src/components/MemeSoundboard.jsx
-// Interactive live Hindi Meme Soundboard with 12 famous buttons
+// Interactive live Hindi 18+ Spicy Meme Soundboard
 
 import React, { useState } from 'react';
-import { Sparkles, PlayCircle } from 'lucide-react';
+import { Sparkles, PlayCircle, Flame } from 'lucide-react';
 import { audioManager } from '../utils/audioManager';
 
 const SOUNDBOARD_MEMES = [
+  { id: 'roadies-meme', title: 'Roadies Rage', quote: 'Bhosdike Madarchod Been K Loray!', emoji: '🤬', color: '#ef4444' },
+  { id: 'chutiya-meme', title: 'Carry / Standup', quote: 'Tum Chutiya Ho!', emoji: '🤡', color: '#f59e0b' },
+  { id: 'chal-bsdk-meme', title: 'Hindustani Bhau', quote: 'Chal Bhosdike!', emoji: '🔥', color: '#dc2626' },
+  { id: 'kyu-re-meme', title: 'Kyu Re', quote: 'Kyu re Madarchod?!', emoji: '💥', color: '#ec4899' },
+  { id: 'puneet-gaya-meme', title: 'Lord Puneet', quote: 'Ab Tu Gaya Beta Ab Dekh Tu!', emoji: '👑', color: '#8b5cf6' },
+  { id: 'yawn-meme', title: 'Puneet Superstar', quote: 'Saale Chaate Marunga!', emoji: '😡', color: '#10b981' },
+  { id: 'gaand-danda-meme', title: 'Danda Meme', quote: 'Gaand Me Danda De!', emoji: '⚡', color: '#f43f5e' },
   { id: 'start-study', title: 'Modi Ji', quote: 'Wah Modiji Wah!', emoji: '🇮🇳', color: '#f59e0b' },
   { id: 'tab-change', title: 'Rahul Gandhi', quote: 'Khatam Tata Bye Bye!', emoji: '🚨', color: '#ef4444' },
   { id: 'face-missing', title: 'ACP Pradyuman', quote: 'Kuch Toh Gadbad Hai!', emoji: '🕵️‍♂️', color: '#8b5cf6' },
-  { id: 'distracted', title: 'Bhaiyaaa', quote: 'Bhaiyaaaaa!', emoji: '🗣️', color: '#ec4899' },
   { id: 'sleep-warning', title: 'Momota', quote: 'Khela Hobe!', emoji: '💥', color: '#3b82f6' },
-  { id: 'yawn-meme', title: 'Puneet Superstar', quote: 'Saale Chaate Marunga!', emoji: '😡', color: '#10b981' },
-  { id: 'noise-meme', title: 'Baburao / Nana', quote: 'Chup! Bilkul Chup!', emoji: '🤫', color: '#6366f1' },
   { id: 'shocked-meme', title: 'Arey Baap Re', quote: 'Ye Kya Dekh Liya?!', emoji: '😲', color: '#eab308' },
   { id: 'angry-meme', title: 'Arpit Bala', quote: 'Bkl Gussa Aa Jata Hai!', emoji: '😠', color: '#dc2626' },
   { id: 'pushpa-meme', title: 'Pushpa Raj', quote: 'Main Jhukega Nahi!', emoji: '🔥', color: '#ea580c' },
@@ -37,14 +41,14 @@ export function MemeSoundboard({ onTriggerMeme }) {
     <div className="card meme-soundboard-card">
       <div className="card-header">
         <div className="header-title">
-          <Sparkles className="icon text-yellow" size={20} />
-          <h3>🔥 Live Hindi Meme Soundboard</h3>
+          <Flame className="icon text-red" size={20} />
+          <h3>🔥 18+ Spicy Hindi Meme Soundboard</h3>
         </div>
-        <span className="badge-live-memes">12 Instant Sounds</span>
+        <span className="badge-live-memes">16 Instant Sounds</span>
       </div>
 
       <p className="soundboard-subtitle">
-        Click any meme button to play viral Hindi dialogue instantly!
+        Click any meme button to play viral spicy Hindi dialogue instantly!
       </p>
 
       <div className="soundboard-grid">

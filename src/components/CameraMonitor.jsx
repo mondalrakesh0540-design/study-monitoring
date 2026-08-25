@@ -1,8 +1,8 @@
 // src/components/CameraMonitor.jsx
-// Live webcam monitor with dynamic AI mood bounding box, ambient sound wave meter, and HUD overlays.
+// Live webcam monitor with dynamic AI mood bounding box and camera controls.
 
 import React from 'react';
-import { Camera, CameraOff, Video, AlertTriangle, Sparkles, Mic } from 'lucide-react';
+import { Camera, CameraOff, Video, AlertTriangle } from 'lucide-react';
 import { CAMERA_STATUS } from '../hooks/useCamera';
 
 export function CameraMonitor({
@@ -13,9 +13,7 @@ export function CameraMonitor({
   stopCamera,
   isMonitoring,
   faceBoundingBox,
-  expressionMood = 'Focused 🎯',
-  noiseLevel = 0,
-  isLoudNoise = false
+  expressionMood = 'Focused 🎯'
 }) {
   const renderBadge = () => {
     switch (cameraStatus) {
@@ -34,7 +32,6 @@ export function CameraMonitor({
     }
   };
 
-  // Calculate percentage overlay coordinates accounting for video horizontal mirror
   const renderBoundingBox = () => {
     if (!isMonitoring || !faceBoundingBox || cameraStatus !== CAMERA_STATUS.READY) {
       return null;
@@ -43,7 +40,6 @@ export function CameraMonitor({
     const { originX, originY, width, height, videoWidth, videoHeight } = faceBoundingBox;
     if (!videoWidth || !videoHeight) return null;
 
-    // Flip X for mirrored video display
     const leftPercent = ((videoWidth - originX - width) / videoWidth) * 100;
     const topPercent = (originY / videoHeight) * 100;
     const widthPercent = (width / videoWidth) * 100;
@@ -52,7 +48,7 @@ export function CameraMonitor({
     let bboxColor = '#22c55e'; // Green
     if (expressionMood.includes('Yawn') || expressionMood.includes('Smile') || expressionMood.includes('Wink')) {
       bboxColor = '#eab308'; // Yellow
-    } else if (expressionMood.includes('Sleep') || expressionMood.includes('Absent') || expressionMood.includes('Angry') || isLoudNoise) {
+    } else if (expressionMood.includes('Sleep') || expressionMood.includes('Absent') || expressionMood.includes('Angry')) {
       bboxColor = '#ef4444'; // Red
     } else if (expressionMood.includes('Shocked')) {
       bboxColor = '#a855f7'; // Purple
@@ -95,16 +91,6 @@ export function CameraMonitor({
           autoPlay
           className={`webcam-video ${cameraStatus === CAMERA_STATUS.READY ? 'active' : 'inactive'}`}
         />
-
-        {/* Live Audio Waveform HUD Overlay */}
-        {isMonitoring && (
-          <div className="camera-live-hud-top">
-            <div className={`camera-hud-chip ${isLoudNoise ? 'hud-chip-alert' : ''}`}>
-              <Mic size={14} className="hud-mic-icon" />
-              <span>{isLoudNoise ? 'LOUD NOISE DETECTED' : `Ambient Mic: ${noiseLevel}%`}</span>
-            </div>
-          </div>
-        )}
 
         {cameraStatus !== CAMERA_STATUS.READY && (
           <div className="video-placeholder">

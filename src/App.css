@@ -743,7 +743,11 @@ body {
   vertical-align: middle;
 }
 
-/* Indicators Row (Mood & Noise) */
+/* Indicators Row */
+.indicators-row-single {
+  margin-top: 14px;
+}
+
 .indicators-row {
   display: grid;
   grid-template-columns: 1fr 1fr;

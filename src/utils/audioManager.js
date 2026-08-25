@@ -1,6 +1,5 @@
 // src/utils/audioManager.js
-// High-performance FocusGuard AI Indian Meme Sound Manager
-// Includes pre-caching, instantaneous playback, volume control, and AudioContext unlock
+// FocusGuard AI - 18+ Spicy Hindi Meme Voice Sound Manager
 
 const AUDIO_FILES = {
   'start-study': [
@@ -19,14 +18,14 @@ const AUDIO_FILES = {
     'https://www.myinstants.com/media/sounds/nahi-nahi-saluke-yaha-kuchh-to-gadbad-hai.mp3'
   ],
   'distracted': [
+    '/audio/chal-bsdk-meme.mp3',
     '/audio/distracted.mp3',
-    '/audio/distracted.wav',
-    'https://www.myinstants.com/media/sounds/bhaiyaaaaa.mp3'
+    '/audio/distracted.wav'
   ],
   'back-to-study': [
+    '/audio/shabash-meme.mp3',
     '/audio/back-to-study.mp3',
-    '/audio/back-to-study.wav',
-    'https://www.myinstants.com/media/sounds/maja-aaya.mp3'
+    '/audio/back-to-study.wav'
   ],
   'sleep-warning': [
     '/audio/sleep-warning.mp3',
@@ -53,11 +52,6 @@ const AUDIO_FILES = {
     '/audio/angry-meme.wav',
     'https://www.myinstants.com/media/sounds/arpit-bala-bkl-gussa-aa-jata-hai.mp3'
   ],
-  'noise-meme': [
-    '/audio/noise-meme.mp3',
-    '/audio/noise-meme.wav',
-    'https://www.myinstants.com/media/sounds/chup-bilkul-chup.mp3'
-  ],
   'pushpa-meme': [
     '/audio/pushpa-meme.mp3',
     '/audio/pushpa-meme.wav',
@@ -67,73 +61,102 @@ const AUDIO_FILES = {
     '/audio/shabash-meme.mp3',
     '/audio/shabash-meme.wav',
     'https://www.myinstants.com/media/sounds/shabash-beta.mp3'
+  ],
+  'roadies-meme': [
+    '/audio/roadies-meme.mp3',
+    '/audio/roadies-meme.wav'
+  ],
+  'chutiya-meme': [
+    '/audio/chutiya-meme.mp3',
+    '/audio/chutiya-meme.wav'
+  ],
+  'chal-bsdk-meme': [
+    '/audio/chal-bsdk-meme.mp3',
+    '/audio/chal-bsdk-meme.wav'
+  ],
+  'kyu-re-meme': [
+    '/audio/kyu-re-meme.mp3',
+    '/audio/kyu-re-meme.wav'
+  ],
+  'puneet-gaya-meme': [
+    '/audio/puneet-gaya-meme.mp3',
+    '/audio/puneet-gaya-meme.wav'
+  ],
+  'gaand-danda-meme': [
+    '/audio/gaand-danda-meme.mp3',
+    '/audio/gaand-danda-meme.wav'
   ]
 };
 
 export const FUNNY_MEMES = {
   'start-study': [
     { text: 'Modi Ji: Wah Modiji Wah! Mitron, padhai shuru karo, topper banna hai!', tag: '🇮🇳 MODI JI MOTIVATION' },
-    { text: 'Study Mode ACTIVATED! No phone, no Insta, only 100% Focus!', tag: '🚀 TOPPER VIBES' },
-    { text: 'Mitron! Aaj pura chapter padh ke hi sona hai!', tag: '📚 MODI MISSION' }
+    { text: 'Study Mode ACTIVATED! Phone hatao aur dhyan do!', tag: '🚀 TOPPER VIBES' }
   ],
   'tab-change': [
     { text: 'Rahul Gandhi: Khatam! Tata, Bye Bye, Goodbye, Gaya! Tab switch mat karo!', tag: '🚨 KHATAM TATA BYE BYE' },
-    { text: 'Caught in 4K! YouTube naki Insta Reels? Padhai pe dhyan do!', tag: '📱 NO REELS' },
-    { text: 'Alt+Tab cheat bandh karo! Camera sab dekh raha hai!', tag: '🛑 TAB SWITCH DETECTED' }
+    { text: 'Caught in 4K! YouTube naki Insta Reels? Padhai pe dhyan do!', tag: '📱 NO REELS' }
   ],
   'face-missing': [
     { text: 'ACP Pradyuman: Daya, yaha kuchh to gadbad hai! Bachha desk se gayab hai!', tag: '🕵️‍♂️ ACP PRADYUMAN (CID)' },
-    { text: 'Oi! Porte bose kothay gele? Bhoot hoye gele naki?!', tag: '👻 GHOST MODE' },
-    { text: 'Daya, pata lagao! Kithe bhaag gaya padhai chhod ke?', tag: '🔍 CID DETECTIVE' }
+    { text: 'Oi! Porte bose kothay gele? Desk chhod ke kithe bhaag gaya?', tag: '👻 GHOST MODE' }
   ],
   'distracted': [
-    { text: 'Bhaiyaaaaa! Phone rakho, screen pe dhyan do!', tag: '🗣️ BHAIYAAAA ALERT' },
-    { text: 'Halka ghum pachche? Chokhe jol diye asho! Wake up!', tag: '🥱 LIGHT SLEEP (5s)' },
-    { text: 'Screen-e mon dao! Pashe ki dekhcho? Crush-er DP?', tag: '👀 DISTRACTED' }
+    { text: 'Chal Bhosdike! Phone rakho, screen pe dhyan do!', tag: '🤬 18+ DISTRACTION ALERT' },
+    { text: 'Bhaiyaaaaa! Screen-e mon dao! Pashe ki dekhcho?', tag: '🗣️ BHAIYAAAA ALERT' }
   ],
   'back-to-study': [
-    { text: 'Rahul Gandhi: Aur yeh jo maza hai, topper banne me sabko milega!', tag: '👏 MAZA AAYA' },
     { text: 'Shabash Beta: Bohot badhiya! Focus restored, keep studying!', tag: '🌟 SHABASH BETA' },
     { text: 'Pushpa Raj: Main Jhukega Nahi! Ebar pura syllabus complete hobe!', tag: '🔥 PUSHPA MODE' }
   ],
   'sleep-warning': [
     { text: 'Momota: Khela Hobe! Utho bhai, ghumano bondho koro!', tag: '💥 MOMOTA (KHELA HOBE)' },
-    { text: 'WAKE UP! ৩০ সেকেন্ড ধরে ঘুমাচ্ছো! Kumbhakarna naki tumi?!', tag: '⏰ DEEP SLEEP (30s+)' },
-    { text: '30 second hoye gelo, ekhono ghumaccho? Bapre ki ghum!', tag: '😴 SLEEPING BEAUTY' }
+    { text: 'WAKE UP! ৩০ সেকেন্ড ধরে ঘুমাচ্ছো! Kumbhakarna naki tumi?!', tag: '⏰ DEEP SLEEP (30s+)' }
   ],
   'yawn-meme': [
     { text: 'Puneet Superstar: Saale itne chaate marunga na! Padhai ke time jhamai/yawn le raha hai?!', tag: '🥱 YAWN DETECTED' },
-    { text: 'Munh band kar ke padh! Jhamai keno dichho?', tag: '🤦‍♂️ YAWN ALERT' }
+    { text: 'Lord Puneet: Ab tu gaya beta! Jhamai keno dichho?', tag: '😡 PUNEET RAGE' }
   ],
   'smile-meme': [
     { text: 'Arnab Goswami: Kuch bhi?! Kuch bhi?! Padhai ke time akele akele kyu hass raha hai?', tag: '😂 SMILING AT PHONE' },
-    { text: 'ACP Pradyuman: Daya! Bachha muskura raha hai... Zarur phone me chat chal rahi hai!', tag: '🕵️‍♂️ SUSPICIOUS SMILE' }
+    { text: 'Tum Chutiya Ho! Padhai chhod ke akele kyu muskura raha hai?', tag: '🤡 SUSPICIOUS SMILE' }
   ],
   'shocked-meme': [
-    { text: 'Arey Baap Re! Ye kya dekh liya?! Aankhein khuli ki khuli reh gayi!', tag: '😲 SHOCKED EXPRESSION' },
-    { text: 'Itna surprise kyu ho raha hai? Padhai pe dhyan de!', tag: '👀 WIDE EYES' }
+    { text: 'Arey Baap Re! Ye kya dekh liya?! Aankhein khuli ki khuli reh gayi!', tag: '😲 SHOCKED EXPRESSION' }
   ],
   'angry-meme': [
-    { text: 'Arpit Bala: Bkl bina baat ke gussa aa jata hai! Padhai se kyu chidh raha hai?', tag: '😠 ANGRY / FROWNING' },
-    { text: 'Control Uday Control! Gussa thanda karo aur padho!', tag: '🛑 ANGER ALERT' }
+    { text: 'Arpit Bala: Bkl bina baat ke gussa aa jata hai! Padhai se kyu chidh raha hai?', tag: '😠 ANGRY / FROWNING' }
   ],
-  'noise-meme': [
-    { text: 'Baburao / Nana: Chup! Bilkul Chup! Aas paas itna shor kyu macha raha hai?!', tag: '🤫 LOUD NOISE / TALKING' },
-    { text: 'Awaaz neeche! Room me itna sound kyu ho raha hai?! Silence please!', tag: '📢 NOISE ALERT' }
+  'roadies-meme': [
+    { text: 'Roadies Rage: Bhosdike madarchod been k loray! Dhyan se padhai kar!', tag: '🤬 ROADIES RAGE' }
+  ],
+  'chutiya-meme': [
+    { text: 'Tum Chutiya Ho! Padhai me dhyan lagao!', tag: '🤡 CHUTIYA ALERT' }
+  ],
+  'chal-bsdk-meme': [
+    { text: 'Chal Bhosdike! Bakwaas bandh karo aur kitaab kholo!', tag: '🔥 CHAL BSDK' }
+  ],
+  'kyu-re-meme': [
+    { text: 'Kyu re Madarchod! Kiske baare me soch raha hai?!', tag: '💥 VULGAR SPICY' }
+  ],
+  'puneet-gaya-meme': [
+    { text: 'Lord Puneet: Ab tu gaya beta, ab dekh tu!', tag: '👑 LORD PUNEET' }
+  ],
+  'gaand-danda-meme': [
+    { text: 'Gaand Me Danda De! Abhi ke abhi padhne baith!', tag: '⚡ SPICY AUDIO' }
   ]
 };
 
 class AudioManager {
   constructor() {
     this.currentAudio = null;
-    this.volume = 0.8;
+    this.volume = 0.85;
     this.muted = false;
     this.lastPlayTimes = {};
     this.cooldownMs = 2500;
     this.audioContext = null;
     this.audioCache = {};
 
-    // Preload audio files for zero latency
     if (typeof window !== 'undefined') {
       this.preloadAll();
     }
@@ -205,12 +228,6 @@ class AudioManager {
     return list[randomIndex].text;
   }
 
-  getFunnyMemeObject(eventType) {
-    const list = FUNNY_MEMES[eventType] || [{ text: 'FocusGuard AI is watching you! Padhai karo!', tag: '🤖 GUARD' }];
-    const randomIndex = Math.floor(Math.random() * list.length);
-    return list[randomIndex];
-  }
-
   canPlay(eventType, force = false) {
     if (force) return true;
     const now = Date.now();
@@ -237,7 +254,6 @@ class AudioManager {
     this.stopCurrent();
     this.lastPlayTimes[eventType] = Date.now();
 
-    // 1. Try cached audio element first (0ms latency)
     if (this.audioCache[eventType]) {
       try {
         const audio = this.audioCache[eventType];
@@ -247,11 +263,10 @@ class AudioManager {
         await audio.play();
         return { played: true };
       } catch (err) {
-        console.warn(`[AudioManager] Cached play failed for ${eventType}, falling back:`, err);
+        console.warn(`[AudioManager] Cached play failed for ${eventType}, fallback:`, err);
       }
     }
 
-    // 2. Fallback to path list
     const paths = AUDIO_FILES[eventType] || [];
     let playedSuccessfully = false;
 
@@ -295,27 +310,14 @@ class AudioManager {
       const now = ctx.currentTime;
       const vol = this.muted ? 0 : this.volume * 0.4;
 
-      if (eventType === 'sleep-warning') {
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(800, now);
-        osc.frequency.exponentialRampToValueAtTime(400, now + 0.3);
-        osc.frequency.exponentialRampToValueAtTime(800, now + 0.6);
-        gain.gain.setValueAtTime(vol, now);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 1.2);
-        osc.start(now);
-        osc.stop(now + 1.2);
-      } else {
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(600, now);
-        osc.frequency.exponentialRampToValueAtTime(900, now + 0.2);
-        gain.gain.setValueAtTime(vol, now);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
-        osc.start(now);
-        osc.stop(now + 0.5);
-      }
-    } catch (e) {
-      console.warn('[AudioManager] Synth fallback error:', e);
-    }
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(600, now);
+      osc.frequency.exponentialRampToValueAtTime(900, now + 0.2);
+      gain.gain.setValueAtTime(vol, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+      osc.start(now);
+      osc.stop(now + 0.5);
+    } catch (e) {}
   }
 }
 
