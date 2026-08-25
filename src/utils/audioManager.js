@@ -1,14 +1,14 @@
 // src/utils/audioManager.js
-// Plays user-provided custom MP3/MPEG audio files with multi-format browser fallback.
-// Includes AudioContext unlock for browser autoplay policy.
+// FocusGuard AI Alert Sound Manager
+// Plays alert sounds (.wav/.mp3) with Web Audio API synthesis fallback and autoplay unlock.
 
 const AUDIO_FILES = {
-  'start-study': ['/audio/start-study.mp3', '/audio/start-study.mpeg'],
-  'tab-change': ['/audio/tab-change.mp3', '/audio/tab-change.mpeg'],
-  'face-missing': ['/audio/face-missing.mp3', '/audio/face-missing.mpeg'],
-  'distracted': ['/audio/distracted.mp3', '/audio/distracted.mpeg'],
-  'back-to-study': ['/audio/back-to-study.mp3', '/audio/back-to-study.mpeg'],
-  'sleep-warning': ['/audio/sleep-warning.mp3', '/audio/sleep-warning.mpeg'],
+  'start-study': ['/audio/start-study.wav', '/audio/start-study.mp3'],
+  'tab-change': ['/audio/tab-change.wav', '/audio/tab-change.mp3'],
+  'face-missing': ['/audio/face-missing.wav', '/audio/face-missing.mp3'],
+  'distracted': ['/audio/distracted.wav', '/audio/distracted.mp3'],
+  'back-to-study': ['/audio/back-to-study.wav', '/audio/back-to-study.mp3'],
+  'sleep-warning': ['/audio/sleep-warning.wav', '/audio/sleep-warning.mp3'],
 };
 
 const FUNNY_MESSAGES = {
@@ -44,8 +44,7 @@ class AudioManager {
     this.volume = 0.8;
     this.muted = false;
     this.lastPlayTimes = {};
-    this.cooldownMs = 4000;
-    this.audioContextUnlocked = false;
+    this.cooldownMs = 3500;
     this.audioContext = null;
   }
 
@@ -59,7 +58,6 @@ class AudioManager {
       if (this.audioContext.state === 'suspended') {
         await this.audioContext.resume();
       }
-      this.audioContextUnlocked = true;
       console.log('[AudioManager] AudioContext unlocked successfully.');
     } catch (e) {
       console.warn('[AudioManager] AudioContext unlock failed:', e);
@@ -111,6 +109,7 @@ class AudioManager {
     }
   }
 
+  // Plays audio file with multi-path fallback
   async playAudio(eventType, force = false) {
     if (this.muted) return { played: false, reason: 'muted' };
     if (!this.canPlay(eventType, force)) {
@@ -132,18 +131,68 @@ class AudioManager {
 
         await audio.play();
         playedSuccessfully = true;
-        console.log(`[AudioManager] Playing: ${audioPath}`);
+        console.log(`[AudioManager] Playing sound: ${audioPath}`);
         break;
       } catch (err) {
         console.warn(`[AudioManager] Playback failed for ${audioPath}:`, err.message);
       }
     }
 
+    // Fallback: Web Audio synth if file fails
     if (!playedSuccessfully) {
-      console.error(`[AudioManager] All audio paths failed for event: ${eventType}`);
+      this.playSynthFallback(eventType);
+      playedSuccessfully = true;
     }
 
     return { played: playedSuccessfully };
+  }
+
+  // Web Audio synth fallback
+  playSynthFallback(eventType) {
+    try {
+      if (!this.audioContext) {
+        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      const ctx = this.audioContext;
+      if (ctx.state === 'suspended') ctx.resume();
+
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      const now = ctx.currentTime;
+      const vol = this.muted ? 0 : this.volume * 0.4;
+
+      if (eventType === 'sleep-warning') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(800, now);
+        osc.frequency.exponentialRampToValueAtTime(400, now + 0.3);
+        osc.frequency.exponentialRampToValueAtTime(800, now + 0.6);
+        gain.gain.setValueAtTime(vol, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 1.2);
+        osc.start(now);
+        osc.stop(now + 1.2);
+      } else if (eventType === 'distracted' || eventType === 'face-missing') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(650, now);
+        osc.frequency.setValueAtTime(880, now + 0.15);
+        gain.gain.setValueAtTime(vol, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+        osc.start(now);
+        osc.stop(now + 0.5);
+      } else {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(523.25, now);
+        osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.3);
+        gain.gain.setValueAtTime(vol, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+        osc.start(now);
+        osc.stop(now + 0.6);
+      }
+    } catch (e) {
+      console.warn('[AudioManager] Synth fallback error:', e);
+    }
   }
 }
 
