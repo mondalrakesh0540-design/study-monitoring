@@ -1,8 +1,8 @@
 // src/components/MemeSoundboard.jsx
-// Interactive live Hindi Meme Soundboard with famous buttons: Modi, Rahul Gandhi, Baburao, Jethalal, Puneet Superstar, ACP Pradyuman, Ashneer
+// Interactive live Hindi Meme Soundboard with 12 famous buttons
 
 import React, { useState } from 'react';
-import { Sparkles, PlayCircle, Volume2 } from 'lucide-react';
+import { Sparkles, PlayCircle } from 'lucide-react';
 import { audioManager } from '../utils/audioManager';
 
 const SOUNDBOARD_MEMES = [
@@ -13,7 +13,10 @@ const SOUNDBOARD_MEMES = [
   { id: 'sleep-warning', title: 'Momota', quote: 'Khela Hobe!', emoji: '💥', color: '#3b82f6' },
   { id: 'yawn-meme', title: 'Puneet Superstar', quote: 'Saale Chaate Marunga!', emoji: '😡', color: '#10b981' },
   { id: 'noise-meme', title: 'Baburao / Nana', quote: 'Chup! Bilkul Chup!', emoji: '🤫', color: '#6366f1' },
-  { id: 'ashneer-meme', title: 'Ashneer', quote: 'Kya Kar Raha Hai Tu?!', emoji: '🤷‍♂️', color: '#14b8a6' },
+  { id: 'shocked-meme', title: 'Arey Baap Re', quote: 'Ye Kya Dekh Liya?!', emoji: '😲', color: '#eab308' },
+  { id: 'angry-meme', title: 'Arpit Bala', quote: 'Bkl Gussa Aa Jata Hai!', emoji: '😠', color: '#dc2626' },
+  { id: 'pushpa-meme', title: 'Pushpa Raj', quote: 'Main Jhukega Nahi!', emoji: '🔥', color: '#ea580c' },
+  { id: 'shabash-meme', title: 'Shabash Beta', quote: 'Bohot Badhiya!', emoji: '🌟', color: '#16a34a' },
   { id: 'smile-meme', title: 'Arnab Goswami', quote: 'Kuch Bhi?! Kuch Bhi?!', emoji: '🎤', color: '#f43f5e' }
 ];
 
@@ -37,11 +40,11 @@ export function MemeSoundboard({ onTriggerMeme }) {
           <Sparkles className="icon text-yellow" size={20} />
           <h3>🔥 Live Hindi Meme Soundboard</h3>
         </div>
-        <span className="badge-live-memes">9 Instant Sounds</span>
+        <span className="badge-live-memes">12 Instant Sounds</span>
       </div>
 
       <p className="soundboard-subtitle">
-        Click any meme button to trigger instant Hindi viral dialogue!
+        Click any meme button to play viral Hindi dialogue instantly!
       </p>
 
       <div className="soundboard-grid">

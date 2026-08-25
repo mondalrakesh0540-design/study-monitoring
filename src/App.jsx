@@ -1,5 +1,5 @@
 // src/App.jsx
-// FocusGuard AI - Smart Webcam Study & Meme Monitoring System
+// FocusGuard AI - Smart Webcam Study & Comprehensive Facial Expression / Noise AI Monitor
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useCamera } from './hooks/useCamera';
@@ -39,6 +39,9 @@ export default function App() {
   const hasTriggeredDistractedRef = useRef(false);
   const hasTriggeredYawnRef = useRef(false);
   const hasTriggeredSmileRef = useRef(false);
+  const hasTriggeredAngryRef = useRef(false);
+  const hasTriggeredShockedRef = useRef(false);
+  const hasTriggeredWinkingRef = useRef(false);
   const hasTriggeredNoiseRef = useRef(false);
 
   const funnyMessageTimerRef = useRef(null);
@@ -60,7 +63,7 @@ export default function App() {
     isReady: isCameraReady
   } = useCamera();
 
-  // Face Detection Hook with Expressions (Yawn / Smile / Mood)
+  // Face Detection Hook with Full Facial Expression Analysis
   const {
     detectorReady,
     modelError,
@@ -71,11 +74,14 @@ export default function App() {
     faceBoundingBox,
     isYawning,
     isSmiling,
+    isAngry,
+    isShocked,
+    isWinking,
     expressionMood
   } = useFaceDetection({ videoRef, isCameraReady, isMonitoring });
 
-  // Microphone Noise Detector Hook
-  const { noiseLevel, isLoudNoise } = useNoiseDetector({ isMonitoring, isCameraReady });
+  // Ambient Microphone Noise Detector Hook
+  const { noiseLevel, isLoudNoise, noiseState } = useNoiseDetector({ isMonitoring, isCameraReady });
 
   // Event Helper
   const addEvent = useCallback((type, title, message) => {
@@ -101,7 +107,7 @@ export default function App() {
     audioManager.setMute(nextMuted);
   };
 
-  // Wrapped startCamera that also unlocks AudioContext
+  // Wrapped startCamera that unlocks AudioContext
   const handleStartCamera = useCallback(async () => {
     await audioManager.unlockAudioContext();
     startCamera();
@@ -119,6 +125,9 @@ export default function App() {
     hasTriggeredDistractedRef.current = false;
     hasTriggeredYawnRef.current = false;
     hasTriggeredSmileRef.current = false;
+    hasTriggeredAngryRef.current = false;
+    hasTriggeredShockedRef.current = false;
+    hasTriggeredWinkingRef.current = false;
     hasTriggeredNoiseRef.current = false;
 
     const msg = audioManager.getFunnyMessage('start-study');
@@ -150,6 +159,9 @@ export default function App() {
     hasTriggeredDistractedRef.current = false;
     hasTriggeredYawnRef.current = false;
     hasTriggeredSmileRef.current = false;
+    hasTriggeredAngryRef.current = false;
+    hasTriggeredShockedRef.current = false;
+    hasTriggeredWinkingRef.current = false;
     hasTriggeredNoiseRef.current = false;
     audioManager.stopCurrent();
   };
@@ -179,7 +191,7 @@ export default function App() {
     onTabReturn: handleTabReturn
   });
 
-  // Main Detection Loop & Expression State Machine
+  // Detection & Facial Expression / Noise State Machine Loop
   useEffect(() => {
     if (!isMonitoring) return;
 
@@ -214,7 +226,7 @@ export default function App() {
         }
       }
     }
-    // 3. Yawn Detection (Puneet Superstar meme)
+    // 3. Yawn Detection (Puneet Superstar)
     else if (isYawning) {
       if (!hasTriggeredYawnRef.current) {
         hasTriggeredYawnRef.current = true;
@@ -225,7 +237,7 @@ export default function App() {
         addEvent('yawn-meme', 'Puneet Superstar: Chaate Marunga', 'Yawn / Jhamai detected while studying!');
       }
     }
-    // 4. Smile / Laughing Detection (Arnab Goswami meme)
+    // 4. Smile / Laughing Detection (Arnab Goswami)
     else if (isSmiling) {
       if (!hasTriggeredSmileRef.current) {
         hasTriggeredSmileRef.current = true;
@@ -233,10 +245,32 @@ export default function App() {
         const msg = audioManager.getFunnyMessage('smile-meme');
         setFunnyMessageWithTimeout(msg);
         audioManager.playAudio('smile-meme', false);
-        addEvent('smile-meme', 'Arnab Goswami: Kuch Bhi?!', 'Smiling or laughing at phone / screen!');
+        addEvent('smile-meme', 'Arnab Goswami: Kuch Bhi?!', 'Smiling or laughing at screen!');
       }
     }
-    // 5. Loud Talking / Noise Detection (Baburao Chup meme)
+    // 5. Shocked / Surprised Expression (Arey Baap Re)
+    else if (isShocked) {
+      if (!hasTriggeredShockedRef.current) {
+        hasTriggeredShockedRef.current = true;
+        setSessionStatus('Shocked / Surprised');
+        const msg = audioManager.getFunnyMessage('shocked-meme');
+        setFunnyMessageWithTimeout(msg);
+        audioManager.playAudio('shocked-meme', false);
+        addEvent('shocked-meme', 'Arey Baap Re! Ye Kya Dekh Liya', 'Shocked / Wide eyes expression detected!');
+      }
+    }
+    // 6. Angry / Frowning Expression (Arpit Bala / Control Uday)
+    else if (isAngry) {
+      if (!hasTriggeredAngryRef.current) {
+        hasTriggeredAngryRef.current = true;
+        setSessionStatus('Angry / Frowning');
+        const msg = audioManager.getFunnyMessage('angry-meme');
+        setFunnyMessageWithTimeout(msg);
+        audioManager.playAudio('angry-meme', false);
+        addEvent('angry-meme', 'Arpit Bala: Gussa Aa Jata Hai', 'Angry / Frustrated expression detected!');
+      }
+    }
+    // 7. Loud Talking / Ambient Noise (Baburao Chup)
     else if (isLoudNoise) {
       if (!hasTriggeredNoiseRef.current) {
         hasTriggeredNoiseRef.current = true;
@@ -244,17 +278,29 @@ export default function App() {
         const msg = audioManager.getFunnyMessage('noise-meme');
         setFunnyMessageWithTimeout(msg);
         audioManager.playAudio('noise-meme', false);
-        addEvent('noise-meme', 'Baburao: Chup! Bilkul Chup!', 'Excessive noise / talking detected via mic!');
+        addEvent('noise-meme', 'Baburao: Chup! Bilkul Chup!', 'Ambient noise / talking detected via microphone!');
       }
     }
-    // 6. Reset back to focused
-    else if (isFaceDetected && !isDistracted && !isYawning && !isSmiling && !isLoudNoise) {
-      if (hasTriggeredFaceMissingRef.current || hasTriggeredDistractedRef.current || hasTriggeredSleepWarningRef.current || hasTriggeredYawnRef.current || hasTriggeredSmileRef.current || hasTriggeredNoiseRef.current) {
+    // 8. Reset back to focused
+    else if (isFaceDetected && !isDistracted && !isYawning && !isSmiling && !isAngry && !isShocked && !isLoudNoise) {
+      if (
+        hasTriggeredFaceMissingRef.current ||
+        hasTriggeredDistractedRef.current ||
+        hasTriggeredSleepWarningRef.current ||
+        hasTriggeredYawnRef.current ||
+        hasTriggeredSmileRef.current ||
+        hasTriggeredAngryRef.current ||
+        hasTriggeredShockedRef.current ||
+        hasTriggeredNoiseRef.current
+      ) {
         hasTriggeredSleepWarningRef.current = false;
         hasTriggeredFaceMissingRef.current = false;
         hasTriggeredDistractedRef.current = false;
         hasTriggeredYawnRef.current = false;
         hasTriggeredSmileRef.current = false;
+        hasTriggeredAngryRef.current = false;
+        hasTriggeredShockedRef.current = false;
+        hasTriggeredWinkingRef.current = false;
         hasTriggeredNoiseRef.current = false;
 
         setSessionStatus('Focused');
@@ -272,6 +318,8 @@ export default function App() {
     isFaceDetected,
     isYawning,
     isSmiling,
+    isAngry,
+    isShocked,
     isLoudNoise,
     addEvent,
     setFunnyMessageWithTimeout
@@ -294,6 +342,8 @@ export default function App() {
             currentStatus === 'Light Sleep / Distracted (5s)' ||
             currentStatus === 'Yawn Detected' ||
             currentStatus === 'Smiling / Daydreaming' ||
+            currentStatus === 'Shocked / Surprised' ||
+            currentStatus === 'Angry / Frowning' ||
             currentStatus === 'Loud Noise Detected'
           ) {
             setDistractedTime((d) => d + 1);
@@ -316,7 +366,7 @@ export default function App() {
           <div>
             <h1 className="app-title">FocusGuard AI</h1>
             <p className="app-subtitle">
-              Indian Meme-Powered Smart Study & Webcam AI Monitor
+              All Expression & Ambient Noise AI Study Monitor (Hindi Memes)
             </p>
           </div>
         </div>
@@ -324,7 +374,7 @@ export default function App() {
 
       {/* Main Grid Layout */}
       <main className="dashboard-grid">
-        {/* Left Column: Camera Preview & Study Controls */}
+        {/* Left Column: Camera Preview & Study Controls & Live Soundboard */}
         <section className="dashboard-col left-col">
           <CameraMonitor
             videoRef={videoRef}
@@ -344,11 +394,11 @@ export default function App() {
             resetSession={resetSession}
           />
 
-          {/* Interactive Live Meme Soundboard */}
+          {/* Interactive Live Hindi Meme Soundboard */}
           <MemeSoundboard onTriggerMeme={(msg) => setFunnyMessageWithTimeout(msg)} />
         </section>
 
-        {/* Right Column: Status Banner, Timers, History */}
+        {/* Right Column: Status Banner, Mood & Noise Indicators, Timers, History */}
         <section className="dashboard-col right-col">
           <StatusPanel
             sessionStatus={sessionStatus}
@@ -360,6 +410,7 @@ export default function App() {
             expressionMood={expressionMood}
             noiseLevel={noiseLevel}
             isLoudNoise={isLoudNoise}
+            noiseState={noiseState}
             debugInfo={{
               isFaceDetected,
               missingDuration,
@@ -382,7 +433,7 @@ export default function App() {
 
       {/* Footer & Credits */}
       <footer className="app-footer">
-        <p>FocusGuard AI • 100% Local Browser AI & Indian Meme Soundboard • Privacy First</p>
+        <p>FocusGuard AI • 100% Local Browser AI • Expressions & Ambient Noise Detection • Privacy First</p>
         <p className="app-credits">
           Developed by <strong>Rakesh</strong> and Collaborated with <strong>Ani (main developer)</strong> <Heart size={14} className="heart-icon" />
         </p>

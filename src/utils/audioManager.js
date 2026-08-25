@@ -1,6 +1,6 @@
 // src/utils/audioManager.js
 // FocusGuard AI Indian Meme Sound Manager
-// Featuring: Modi Ji, Rahul Gandhi, ACP Pradyuman (CID), Bhaiyaaa, Mamata Banerjee (Momota), Puneet Superstar, Baburao, Ashneer, Arnab
+// Complete Hindi Meme Pack: Modi Ji, Rahul Gandhi, ACP Pradyuman, Baburao, Puneet Superstar, Arnab, Arpit Bala, Pushpa, Shabash Beta
 
 const AUDIO_FILES = {
   'start-study': [
@@ -43,20 +43,30 @@ const AUDIO_FILES = {
     '/audio/smile-meme.wav',
     'https://www.myinstants.com/media/sounds/arnab-kuch-bhi.mp3'
   ],
+  'shocked-meme': [
+    '/audio/shocked-meme.mp3',
+    '/audio/shocked-meme.wav',
+    'https://www.myinstants.com/media/sounds/are-baap-re.mp3'
+  ],
+  'angry-meme': [
+    '/audio/angry-meme.mp3',
+    '/audio/angry-meme.wav',
+    'https://www.myinstants.com/media/sounds/arpit-bala-bkl-gussa-aa-jata-hai.mp3'
+  ],
   'noise-meme': [
     '/audio/noise-meme.mp3',
     '/audio/noise-meme.wav',
     'https://www.myinstants.com/media/sounds/chup-bilkul-chup.mp3'
   ],
-  'ashneer-meme': [
-    '/audio/ashneer-meme.mp3',
-    '/audio/ashneer-meme.wav',
-    'https://www.myinstants.com/media/sounds/kya-kar-raha-hai-tu.mp3'
+  'pushpa-meme': [
+    '/audio/pushpa-meme.mp3',
+    '/audio/pushpa-meme.wav',
+    'https://www.myinstants.com/media/sounds/pushpa-fireee.mp3'
   ],
-  'puneet-meme': [
-    '/audio/puneet-meme.mp3',
-    '/audio/puneet-meme.wav',
-    'https://www.myinstants.com/media/sounds/saale-itne-chaate-marunga-puneet-superstar.mp3'
+  'shabash-meme': [
+    '/audio/shabash-meme.mp3',
+    '/audio/shabash-meme.wav',
+    'https://www.myinstants.com/media/sounds/shabash-beta.mp3'
   ]
 };
 
@@ -83,8 +93,8 @@ export const FUNNY_MEMES = {
   ],
   'back-to-study': [
     { text: 'Rahul Gandhi: Aur yeh jo maza hai, topper banne me sabko milega!', tag: '👏 MAZA AAYA' },
-    { text: 'Modi Ji: Shabash! Great comeback! 100% Focus locked in!', tag: '🌟 SHABASH' },
-    { text: 'Good student! Focus restored! Ebar puro chapter sesh koro!', tag: '🏆 CHAMPION' }
+    { text: 'Shabash Beta: Bohot badhiya! Focus restored, keep studying!', tag: '🌟 SHABASH BETA' },
+    { text: 'Pushpa Raj: Main Jhukega Nahi! Ebar pura syllabus complete hobe!', tag: '🔥 PUSHPA MODE' }
   ],
   'sleep-warning': [
     { text: 'Momota: Khela Hobe! Utho bhai, ghumano bondho koro!', tag: '💥 MOMOTA (KHELA HOBE)' },
@@ -93,15 +103,23 @@ export const FUNNY_MEMES = {
   ],
   'yawn-meme': [
     { text: 'Puneet Superstar: Saale itne chaate marunga na! Padhai ke time jhamai/yawn le raha hai?!', tag: '🥱 YAWN DETECTED' },
-    { text: 'Ashneer: Bhai kya kar raha hai tu yaar?! Munh band kar ke padh!', tag: '🤦‍♂️ DOGLAPAN' }
+    { text: 'Munh band kar ke padh! Jhamai keno dichho?', tag: '🤦‍♂️ YAWN ALERT' }
   ],
   'smile-meme': [
     { text: 'Arnab Goswami: Kuch bhi?! Kuch bhi?! Padhai ke time akele akele kyu hass raha hai?', tag: '😂 SMILING AT PHONE' },
-    { text: 'ACP Pradyuman: Daya! Bachha padhte padhte muskura raha hai... Zarur koi chakkar hai!', tag: '🕵️‍♂️ SUSPICIOUS SMILE' }
+    { text: 'ACP Pradyuman: Daya! Bachha muskura raha hai... Zarur phone me chat chal rahi hai!', tag: '🕵️‍♂️ SUSPICIOUS SMILE' }
+  ],
+  'shocked-meme': [
+    { text: 'Arey Baap Re! Ye kya dekh liya?! Aankhein khuli ki khuli reh gayi!', tag: '😲 SHOCKED EXPRESSION' },
+    { text: 'Itna surprise kyu ho raha hai? Padhai pe dhyan de!', tag: '👀 WIDE EYES' }
+  ],
+  'angry-meme': [
+    { text: 'Arpit Bala: Bkl bina baat ke gussa aa jata hai! Padhai se kyu chidh raha hai?', tag: '😠 ANGRY / FROWNING' },
+    { text: 'Control Uday Control! Gussa thanda karo aur padho!', tag: '🛑 ANGER ALERT' }
   ],
   'noise-meme': [
-    { text: 'Baburao / Nana: Chup! Bilkul Chup! Padhai ke time itna shor kyu macha raha hai?!', tag: '🤫 LOUD NOISE / TALKING' },
-    { text: 'Awaaz neeche! Silence zone hai ye!', tag: '📢 NOISE ALERT' }
+    { text: 'Baburao / Nana: Chup! Bilkul Chup! Aas paas itna shor kyu macha raha hai?!', tag: '🤫 LOUD NOISE / TALKING' },
+    { text: 'Awaaz neeche! Room me itna sound kyu ho raha hai?! Silence please!', tag: '📢 NOISE ALERT' }
   ]
 };
 
@@ -115,7 +133,7 @@ class AudioManager {
     this.audioContext = null;
   }
 
-  // Called on user gesture (Start Camera / Start Study click)
+  // Called on user gesture
   async unlockAudioContext() {
     try {
       if (!this.audioContext) {
@@ -181,7 +199,6 @@ class AudioManager {
     }
   }
 
-  // Plays audio file with multi-path fallback
   async playAudio(eventType, force = false) {
     if (this.muted) return { played: false, reason: 'muted' };
     if (!this.canPlay(eventType, force)) {
@@ -210,7 +227,6 @@ class AudioManager {
       }
     }
 
-    // Fallback: Web Audio synth if file fails
     if (!playedSuccessfully) {
       this.playSynthFallback(eventType);
       playedSuccessfully = true;
@@ -219,7 +235,6 @@ class AudioManager {
     return { played: playedSuccessfully };
   }
 
-  // Web Audio synth fallback
   playSynthFallback(eventType) {
     try {
       if (!this.audioContext) {
@@ -240,27 +255,18 @@ class AudioManager {
         osc.type = 'sawtooth';
         osc.frequency.setValueAtTime(800, now);
         osc.frequency.exponentialRampToValueAtTime(400, now + 0.3);
-        osc.frequency.exponentialRampToValueAtTime(800, now + 0.6);
         gain.gain.setValueAtTime(vol, now);
         gain.gain.exponentialRampToValueAtTime(0.01, now + 1.2);
         osc.start(now);
         osc.stop(now + 1.2);
-      } else if (eventType === 'distracted' || eventType === 'face-missing') {
+      } else {
         osc.type = 'triangle';
-        osc.frequency.setValueAtTime(650, now);
-        osc.frequency.setValueAtTime(880, now + 0.15);
+        osc.frequency.setValueAtTime(600, now);
+        osc.frequency.exponentialRampToValueAtTime(900, now + 0.2);
         gain.gain.setValueAtTime(vol, now);
         gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
         osc.start(now);
         osc.stop(now + 0.5);
-      } else {
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(523.25, now);
-        osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.3);
-        gain.gain.setValueAtTime(vol, now);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
-        osc.start(now);
-        osc.stop(now + 0.6);
       }
     } catch (e) {
       console.warn('[AudioManager] Synth fallback error:', e);

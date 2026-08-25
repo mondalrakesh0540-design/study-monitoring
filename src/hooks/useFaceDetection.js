@@ -1,9 +1,12 @@
 // src/hooks/useFaceDetection.js
-// Advanced MediaPipe FaceLandmarker + FaceDetector hook for:
-// 1. Face Presence / Missing Detection
-// 2. Real Eye-Closure Sleep Detection (5s light sleep & 30s deep sleep)
-// 3. Posture & Head Orientation Analysis
-// 4. Expression & Mood Analysis: Yawn Detection & Smile / Laughing Detection
+// Advanced MediaPipe FaceLandmarker with comprehensive Expression & Mood Analysis:
+// - Yawn / Jhamai (jawOpen)
+// - Smile / Laugh (mouthSmile)
+// - Angry / Frown (browDown)
+// - Surprised / Shocked (browInnerUp, eyeWide)
+// - Winking (single eye blink mismatch)
+// - Real Sleep (bilateral EAR + eyeBlink)
+// - Posture & Phone distraction
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { FaceLandmarker, FaceDetector, FilesetResolver } from '@mediapipe/tasks-vision';
@@ -20,7 +23,10 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
   // Expression States
   const [isYawning, setIsYawning] = useState(false);
   const [isSmiling, setIsSmiling] = useState(false);
-  const [expressionMood, setExpressionMood] = useState('Neutral');
+  const [isAngry, setIsAngry] = useState(false);
+  const [isShocked, setIsShocked] = useState(false);
+  const [isWinking, setIsWinking] = useState(false);
+  const [expressionMood, setExpressionMood] = useState('Neutral 😐');
 
   const landmarkerRef = useRef(null);
   const detectorFallbackRef = useRef(null);
@@ -28,8 +34,6 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
 
   const missingStartTimeRef = useRef(null);
   const distractedStartTimeRef = useRef(null);
-  const yawnStartTimeRef = useRef(null);
-  const smileStartTimeRef = useRef(null);
 
   const animFrameIdRef = useRef(null);
   const lastDetectTimeRef = useRef(0);
@@ -54,7 +58,6 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
 
         if (!isSubscribed) return;
 
-        // Try FaceLandmarker first (provides 478 3D landmarks + blendshapes)
         try {
           const landmarker = await FaceLandmarker.createFromOptions(vision, {
             baseOptions: {
@@ -78,13 +81,12 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
           landmarkerRef.current = landmarker;
           isLandmarkerActiveRef.current = true;
           setDetectorReady(true);
-          console.log('[Vision] FaceLandmarker initialized with GPU and Blendshapes.');
+          console.log('[Vision] FaceLandmarker initialized with 478 landmarks & Blendshapes.');
           return;
         } catch (landmarkerErr) {
-          console.warn('[Vision] FaceLandmarker GPU init failed, trying FaceDetector fallback...', landmarkerErr);
+          console.warn('[Vision] FaceLandmarker GPU init failed, using FaceDetector fallback...', landmarkerErr);
         }
 
-        // Fallback to BlazeFace Detector
         const detector = await FaceDetector.createFromOptions(vision, {
           baseOptions: {
             modelAssetPath:
@@ -128,7 +130,7 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
     };
   }, []);
 
-  // Eye Aspect Ratio (EAR) calculation for eye closure
+  // Eye closure check (EAR + Blendshapes)
   const calculateEyeClosure = useCallback((landmarks, blendshapes) => {
     if (blendshapes && blendshapes.length > 0) {
       const categories = blendshapes[0].categories || [];
@@ -157,6 +159,68 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
     }
 
     return false;
+  }, []);
+
+  // Comprehensive Expression Analysis
+  const analyzeExpressions = useCallback((landmarks, blendshapes) => {
+    let rawYawn = false;
+    let rawSmile = false;
+    let rawAngry = false;
+    let rawShocked = false;
+    let rawWinking = false;
+    let mood = 'Focused 🎯';
+
+    if (blendshapes && blendshapes.length > 0) {
+      const categories = blendshapes[0].categories || [];
+      const getScore = (name) => categories.find((c) => c.categoryName === name)?.score || 0;
+
+      const jawOpen = getScore('jawOpen');
+      const smileLeft = getScore('mouthSmileLeft');
+      const smileRight = getScore('mouthSmileRight');
+      const browDownLeft = getScore('browDownLeft');
+      const browDownRight = getScore('browDownRight');
+      const browInnerUp = getScore('browInnerUp');
+      const eyeWideLeft = getScore('eyeWideLeft');
+      const eyeWideRight = getScore('eyeWideRight');
+      const blinkLeft = getScore('eyeBlinkLeft');
+      const blinkRight = getScore('eyeBlinkRight');
+
+      // 1. Yawn / Jhamai
+      if (jawOpen > 0.58) {
+        rawYawn = true;
+        mood = 'Yawning 🥱';
+      }
+      // 2. Smile / Laughing
+      else if (smileLeft > 0.55 && smileRight > 0.55) {
+        rawSmile = true;
+        mood = 'Smiling / Laughing 😂';
+      }
+      // 3. Shocked / Surprised / Wide Eyes
+      else if (browInnerUp > 0.50 || (eyeWideLeft > 0.45 && eyeWideRight > 0.45)) {
+        rawShocked = true;
+        mood = 'Shocked / Surprised 😲';
+      }
+      // 4. Angry / Frowning
+      else if (browDownLeft > 0.48 || browDownRight > 0.48) {
+        rawAngry = true;
+        mood = 'Angry / Frowning 😠';
+      }
+      // 5. Winking
+      else if (Math.abs(blinkLeft - blinkRight) > 0.55 && (blinkLeft > 0.6 || blinkRight > 0.6)) {
+        rawWinking = true;
+        mood = 'Winking 😉';
+      }
+    } else if (landmarks && landmarks.length >= 468) {
+      // Geometric Fallbacks
+      const mouthHeight = Math.hypot(landmarks[13].x - landmarks[14].x, landmarks[13].y - landmarks[14].y);
+      const mouthWidth = Math.hypot(landmarks[61].x - landmarks[291].x, landmarks[61].y - landmarks[291].y);
+      if (mouthWidth > 0 && mouthHeight / mouthWidth > 0.55) {
+        rawYawn = true;
+        mood = 'Yawning 🥱';
+      }
+    }
+
+    return { rawYawn, rawSmile, rawAngry, rawShocked, rawWinking, mood };
   }, []);
 
   // Posture Analysis
@@ -199,43 +263,6 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
     return false;
   }, []);
 
-  // Expression & Mood Analysis (Yawn, Smile, Laugh)
-  const analyzeExpressions = useCallback((landmarks, blendshapes) => {
-    let rawYawn = false;
-    let rawSmile = false;
-    let mood = 'Focused 🎯';
-
-    if (blendshapes && blendshapes.length > 0) {
-      const categories = blendshapes[0].categories || [];
-      const jawOpen = categories.find((c) => c.categoryName === 'jawOpen')?.score || 0;
-      const smileLeft = categories.find((c) => c.categoryName === 'mouthSmileLeft')?.score || 0;
-      const smileRight = categories.find((c) => c.categoryName === 'mouthSmileRight')?.score || 0;
-
-      // Yawn detection (jaw opened wide)
-      if (jawOpen > 0.60) {
-        rawYawn = true;
-        mood = 'Yawning 🥱';
-      }
-
-      // Smile / Laughing detection
-      if (smileLeft > 0.55 && smileRight > 0.55) {
-        rawSmile = true;
-        mood = 'Smiling / Laughing 😂';
-      }
-    } else if (landmarks && landmarks.length >= 468) {
-      // Geometric fallback
-      // Top lip (13), Bottom lip (14), Lip width (61 to 291)
-      const mouthHeight = Math.hypot(landmarks[13].x - landmarks[14].x, landmarks[13].y - landmarks[14].y);
-      const mouthWidth = Math.hypot(landmarks[61].x - landmarks[291].x, landmarks[61].y - landmarks[291].y);
-      if (mouthWidth > 0 && mouthHeight / mouthWidth > 0.55) {
-        rawYawn = true;
-        mood = 'Yawning 🥱';
-      }
-    }
-
-    return { rawYawn, rawSmile, mood };
-  }, []);
-
   // Main Detection Loop
   const detectFrame = useCallback(() => {
     if (!isMonitoring || !isCameraReady || !videoRef.current) {
@@ -261,6 +288,9 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
         let isSleepingOrDistracted = false;
         let detectedYawn = false;
         let detectedSmile = false;
+        let detectedAngry = false;
+        let detectedShocked = false;
+        let detectedWinking = false;
         let currentMood = 'Focused 🎯';
 
         if (isLandmarkerActiveRef.current && landmarkerRef.current) {
@@ -290,14 +320,15 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
               videoHeight: video.videoHeight
             });
 
-            // 1. Eye Closure / Sleep
             const isEyesClosed = calculateEyeClosure(landmarks, faceBlendshapesList);
-            // 2. Posture
             const isPostureDistracted = checkPostureDistracted(landmarks, faceBlendshapesList, video.videoWidth, video.videoHeight);
-            // 3. Expressions (Yawn / Smile)
             const expr = analyzeExpressions(landmarks, faceBlendshapesList);
+
             detectedYawn = expr.rawYawn;
             detectedSmile = expr.rawSmile;
+            detectedAngry = expr.rawAngry;
+            detectedShocked = expr.rawShocked;
+            detectedWinking = expr.rawWinking;
             currentMood = isEyesClosed ? 'Sleeping 😴' : expr.mood;
 
             if (isEyesClosed || isPostureDistracted) {
@@ -325,7 +356,6 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
           }
         }
 
-        // Presence check
         if (hasFace) {
           consecutivePresentRef.current += 1;
           consecutiveMissingRef.current = 0;
@@ -343,9 +373,11 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
           setMissingDuration(0);
           setExpressionMood(currentMood);
 
-          // Handle Yawn & Smile
           setIsYawning(detectedYawn);
           setIsSmiling(detectedSmile);
+          setIsAngry(detectedAngry);
+          setIsShocked(detectedShocked);
+          setIsWinking(detectedWinking);
 
           if (isSleepingOrDistracted) {
             consecutiveDistractedRef.current += 1;
@@ -373,6 +405,9 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
           setIsDistracted(false);
           setIsYawning(false);
           setIsSmiling(false);
+          setIsAngry(false);
+          setIsShocked(false);
+          setIsWinking(false);
           setExpressionMood('Absent 👻');
           distractedStartTimeRef.current = null;
           setDistractedDuration(0);
@@ -411,7 +446,10 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
       setIsDistracted(false);
       setIsYawning(false);
       setIsSmiling(false);
-      setExpressionMood('Neutral');
+      setIsAngry(false);
+      setIsShocked(false);
+      setIsWinking(false);
+      setExpressionMood('Neutral 😐');
       setFaceBoundingBox(null);
     }
 
@@ -430,6 +468,9 @@ export function useFaceDetection({ videoRef, isCameraReady, isMonitoring }) {
     faceBoundingBox,
     isYawning,
     isSmiling,
+    isAngry,
+    isShocked,
+    isWinking,
     expressionMood
   };
 }

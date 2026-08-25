@@ -14,7 +14,8 @@ export function StatusPanel({
   debugInfo,
   expressionMood = 'Focused 🎯',
   noiseLevel = 0,
-  isLoudNoise = false
+  isLoudNoise = false,
+  noiseState = 'Quiet 🤫'
 }) {
   const [showDebug, setShowDebug] = useState(false);
 
@@ -89,8 +90,8 @@ export function StatusPanel({
 
         <div className={`indicator-pill noise-pill ${isLoudNoise ? 'noise-alert-pill' : ''}`}>
           <Mic size={16} className="indicator-icon" />
-          <span className="indicator-label">Mic Noise:</span>
-          <span className="indicator-val">{noiseLevel}%</span>
+          <span className="indicator-label">Ambient Sound:</span>
+          <span className="indicator-val">{noiseState} ({noiseLevel}%)</span>
           <div className="mini-noise-bar">
             <div className="mini-noise-fill" style={{ width: `${Math.min(100, noiseLevel * 2)}%` }} />
           </div>

@@ -1,5 +1,5 @@
 // src/hooks/useNoiseDetector.js
-// Custom React hook to monitor microphone sound levels and detect talking / loud noise during study.
+// Custom React hook to monitor ambient environmental noise and talking in real-time.
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 
@@ -7,6 +7,7 @@ export function useNoiseDetector({ isMonitoring, isCameraReady }) {
   const [noiseLevel, setNoiseLevel] = useState(0);
   const [isLoudNoise, setIsLoudNoise] = useState(false);
   const [micActive, setMicActive] = useState(false);
+  const [noiseState, setNoiseState] = useState('Quiet 🤫');
 
   const audioContextRef = useRef(null);
   const analyserRef = useRef(null);
@@ -16,7 +17,14 @@ export function useNoiseDetector({ isMonitoring, isCameraReady }) {
 
   const startMic = useCallback(async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: false
+        },
+        video: false
+      });
       micStreamRef.current = stream;
 
       const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -25,12 +33,12 @@ export function useNoiseDetector({ isMonitoring, isCameraReady }) {
       const source = audioCtx.createMediaStreamSource(stream);
       const analyser = audioCtx.createAnalyser();
       analyser.fftSize = 256;
-      analyser.smoothingTimeConstant = 0.5;
+      analyser.smoothingTimeConstant = 0.4;
       source.connect(analyser);
       analyserRef.current = analyser;
 
       setMicActive(true);
-      console.log('[NoiseDetector] Microphone noise monitoring active.');
+      console.log('[NoiseDetector] Ambient microphone monitor active.');
     } catch (e) {
       console.warn('[NoiseDetector] Microphone access denied or unavailable:', e);
       setMicActive(false);
@@ -56,10 +64,10 @@ export function useNoiseDetector({ isMonitoring, isCameraReady }) {
     setMicActive(false);
     setNoiseLevel(0);
     setIsLoudNoise(false);
+    setNoiseState('Quiet 🤫');
     loudNoiseCountRef.current = 0;
   }, []);
 
-  // Monitor loop
   useEffect(() => {
     if (isMonitoring && isCameraReady) {
       startMic();
@@ -72,7 +80,7 @@ export function useNoiseDetector({ isMonitoring, isCameraReady }) {
     };
   }, [isMonitoring, isCameraReady, startMic, stopMic]);
 
-  // Audio level polling
+  // Audio level polling & state classification
   useEffect(() => {
     if (!micActive || !analyserRef.current) return;
 
@@ -87,14 +95,24 @@ export function useNoiseDetector({ isMonitoring, isCameraReady }) {
         sum += dataArray[i];
       }
       const avg = sum / dataArray.length; // 0 to 255
-      const normalized = Math.min(100, Math.round((avg / 128) * 100));
+      const normalized = Math.min(100, Math.round((avg / 120) * 100));
       setNoiseLevel(normalized);
 
-      // Talking / shouting threshold (> 35%)
-      if (normalized > 35) {
+      // Noise States
+      if (normalized < 20) {
+        setNoiseState('Quiet 🤫');
+      } else if (normalized < 45) {
+        setNoiseState('Whisper / Ambient 🍃');
+      } else if (normalized < 70) {
+        setNoiseState('Talking / Chatter 🗣️');
+      } else {
+        setNoiseState('Loud Shouting 📢');
+      }
+
+      // Trigger threshold (> 40% sustained)
+      if (normalized > 40) {
         loudNoiseCountRef.current += 1;
-        if (loudNoiseCountRef.current >= 8) {
-          // Sustained loud talking/noise for ~1.5s
+        if (loudNoiseCountRef.current >= 6) {
           setIsLoudNoise(true);
         }
       } else {
@@ -119,6 +137,7 @@ export function useNoiseDetector({ isMonitoring, isCameraReady }) {
   return {
     noiseLevel,
     isLoudNoise,
+    noiseState,
     micActive
   };
 }
